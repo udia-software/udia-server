@@ -1,37 +1,37 @@
-const Query = require("./Query");
-const Mutation = require("./Mutation");
-const pubsub = require("../pubsub");
+const Query = require("./queries");
+const Mutation = require("./mutations");
+const pubSub = require("../pubSub");
 
 module.exports = {
   Query: Query,
   Mutation: Mutation,
   Subscription: {
     Link: {
-      subscribe: () => pubsub.asyncIterator("Link")
+      subscribe: () => pubSub.asyncIterator("Link")
     }
   },
   Link: {
     id: root => root._id || root.id,
-    postedBy: async ({ postedById }, data, { dataloaders: { userLoader } }) => {
-      return await userLoader.load(postedById);
+    postedBy: async ({ postedById }, data, { Users }) => {
+      return await Users.getUserById(postedById);
     },
-    votes: async ({ _id }, data, { mongo: { Votes } }) => {
-      return await Votes.find({ linkId: _id }).toArray();
+    votes: async ({ _id }, data, { Votes }) => {
+      return await Votes.getVotesByLinkId(_id);
     }
   },
   Vote: {
     id: root => root._id || root.id,
-    user: async ({ userId }, data, { dataloaders: { userLoader } }) => {
-      return await userLoader.load(userId);
+    user: async ({ userId }, data, { Users }) => {
+      return await Users.getUserById(userId);
     },
-    link: async ({ linkId }, data, { mongo: { Links } }) => {
-      return await Links.findOne({ _id: linkId });
+    link: async ({ linkId }, data, { Links }) => {
+      return await Links.getLinkById(linkId);
     }
   },
   User: {
     id: root => root._id || root.id,
-    votes: async ({ _id }, data, { mongo: { Votes } }) => {
-      return await Votes.find({ userId: _id }).toArray();
+    votes: async ({ _id }, data, { Votes }) => {
+      return await Votes.getVotesByUserId(_id);
     }
   }
 };

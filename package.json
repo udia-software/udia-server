@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest",
-    "lint": "eslint src",
+    "test": "jest --coverage",
+    "lint": "eslint src __test__",
     "start": "node ./src/index.js"
   },
   "keywords": [],
@@ -15,6 +15,9 @@
     "testEnvironment": "node",
     "testPathIgnorePatterns": [
       "/node_modules/"
+    ],
+    "collectCoverageFrom": [
+      "**/src/**"
     ],
     "coverageReporters": [
       "lcov",

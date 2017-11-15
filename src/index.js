@@ -1,16 +1,19 @@
+"use strict";
+
 const express = require("express");
 const bodyParser = require("body-parser");
 const { graphqlExpress, graphiqlExpress } = require("apollo-server-express");
-const { execute, subscribe } = require("graphql");
+const { execute, subscribe, formatError } = require("graphql");
 const { createServer } = require("http");
 const { SubscriptionServer } = require("subscriptions-transport-ws");
 const { Logger, MongoClient } = require("mongodb");
 
 const { NODE_ENV, MONGO_URI, PORT } = require("./constants");
 const schema = require("./schema");
-const { authenticate } = require("./authentication");
-const buildDataloaders = require("./dataloaders");
-const formatError = require("./formatError");
+const { verifyUserJWT } = require("./modules/Auth");
+const LinkManager = require("./modules/LinkManager");
+const UserManager = require("./modules/UserManager");
+const VoteManager = require("./modules/VoteManager");
 
 const connectMongo = async () => {
   const db = await MongoClient.connect(MONGO_URI);
@@ -35,17 +38,24 @@ const connectMongo = async () => {
 
 const start = async () => {
   const mongo = await connectMongo();
-  var app = express();
+  let app = express();
 
   const buildOptions = async (req, res, next) => {
-    const user = await authenticate(req, mongo.Users);
+    const userManager = new UserManager(mongo.Users);
+    const user = await verifyUserJWT(req, userManager);
     return {
       context: {
-        dataloaders: buildDataloaders(mongo),
-        mongo,
+        Users: userManager,
+        Votes: new VoteManager(mongo.Votes),
+        Links: new LinkManager(mongo.Links),
         user
       },
-      formatError,
+      formatError: error => {
+        const data = formatError(error);
+        const { originalError } = error;
+        data.field = originalError && originalError.field;
+        return data;
+      },
       schema
     };
   };
@@ -55,7 +65,7 @@ const start = async () => {
     "/graphiql",
     graphiqlExpress({
       endpointURL: "/graphql",
-      passHeader: "'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVhMGI3Nzg2ODNjMWNmNmNhM2I5MzZmOSIsImlhdCI6MTUxMDcxOTY2MiwibmJmIjoxNTEwNzE5NjYyLCJleHAiOjE1MTA4OTI0NjJ9.52jFKYv4pjUNqiiqGy-_TKDNCZLB6il4Lrq3Y20q3E4'",
+      passHeader: "'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVhMGNjMmFjMDcyZTA5OTllOWNlMDM3ZiIsImlhdCI6MTUxMDc4NjQxMCwibmJmIjoxNTEwNzg2NDEwLCJleHAiOjE1MTA5NTkyMTB9.est14Z3S_wiPpeGWa2A8QPmvE2S-C_jDGJbgl_4N3co'",
       subscriptionsEndpoint: `ws://0.0.0.0:${PORT}/subscriptions`
     })
   );

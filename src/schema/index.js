@@ -7,7 +7,7 @@ const typeDefs = `
     id: ID!
     url: String!
     description: String!
-    postedBy: User
+    postedBy: User!
     votes: [Vote!]!
   }
 
@@ -22,27 +22,26 @@ const typeDefs = `
   }
 
   type Mutation {
-    createLink(url: String!, description: String!): Link
-    createVote(linkId: ID!): Vote
-    createUser(name: String!, authProvider: AuthProviderSignupData!): User
+    createLink(url: String!, description: String!): Link!
+    createVote(linkId: ID!): Vote!
+    createUser(name: String!, authProvider: AuthProviderSignupData!): User!
     signinUser(email: AUTH_PROVIDER_EMAIL): SigninPayload!
   }
 
   type SigninPayload {
-    token: String
-    user: User
+    token: String!
+    user: User!
   }
 
   type User {
     id: ID!
     name: String!
-    email: String
-    password: String
+    email: String!
     votes: [Vote!]!
   }
 
   input AuthProviderSignupData {
-    email: AUTH_PROVIDER_EMAIL
+    email: AUTH_PROVIDER_EMAIL!
   }
 
   input LinkFilter {
@@ -66,7 +65,7 @@ const typeDefs = `
   
   type LinkSubscriptionPayload {
     mutation: _ModelMutationType!
-    node: Link
+    node: Link!
   }
   
   enum _ModelMutationType {
