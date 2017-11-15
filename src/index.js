@@ -6,14 +6,13 @@ const { createServer } = require("http");
 const { SubscriptionServer } = require("subscriptions-transport-ws");
 const { Logger, MongoClient } = require("mongodb");
 
+const { MONGO_URI } = require("./constants");
 const schema = require("./schema");
 const { authenticate } = require("./authentication");
 const buildDataloaders = require("./dataloaders");
 const formatError = require("./formatError");
 
-
 const connectMongo = async () => {
-  const MONGO_URI = process.env.MONGO_URI || "mongodb://localhost:27017/udia";
   const db = await MongoClient.connect(MONGO_URI);
 
   // Performance Logging
@@ -54,8 +53,8 @@ const start = async () => {
     "/graphiql",
     graphiqlExpress({
       endpointURL: "/graphql",
-      // passHeader: `'Authorization': 'bearer token-foo@bar.com'`,
-      subscriptionsEndpoint: `ws://0.0.0.0:${PORT}/subscriptions`,
+      passHeader: `'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVhMGI3Nzg2ODNjMWNmNmNhM2I5MzZmOSIsImlhdCI6MTUxMDcxOTY2MiwibmJmIjoxNTEwNzE5NjYyLCJleHAiOjE1MTA4OTI0NjJ9.52jFKYv4pjUNqiiqGy-_TKDNCZLB6il4Lrq3Y20q3E4'`,
+      subscriptionsEndpoint: `ws://0.0.0.0:${PORT}/subscriptions`
     })
   );
 

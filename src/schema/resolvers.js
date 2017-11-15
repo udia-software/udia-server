@@ -2,10 +2,16 @@ const { ObjectID } = require("mongodb");
 const bcrypt = require("bcrypt");
 const Query = require("./Query");
 const Mutation = require("./Mutation")
+const pubsub = require("../pubsub");
 
 module.exports = {
   Query: Query,
   Mutation: Mutation,
+  Subscription: {
+    Link: {
+      subscribe: () => pubsub.asyncIterator("Link")
+    }
+  },
   Link: {
     id: root => root._id || root.id,
     postedBy: async ({ postedById }, data, { dataloaders: { userLoader } }) => {
@@ -28,11 +34,6 @@ module.exports = {
     id: root => root._id || root.id,
     votes: async ({ _id }, data, { mongo: { Votes } }) => {
       return await Votes.find({ userId: _id }).toArray();
-    }
-  },
-  Subscription: {
-    Link: {
-      subscribe: () => pubsub.asyncIterator("Link")
     }
   }
 };

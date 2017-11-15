@@ -1,10 +1,10 @@
 const bcrypt = require("bcrypt");
+const { SALT_ROUNDS } = require("../../constants");
 
 const createUser = async (root, data, { mongo: { Users } }) => {
-  const SALT_ROUNDS = 12;
   const newUser = {
     name: data.name,
-    email: data.authProvider.email.email,
+    email: data.authProvider.email.email
   };
   const password = data.authProvider.email.password;
   const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
