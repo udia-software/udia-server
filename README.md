@@ -11,10 +11,12 @@
 
 Set these, or use the defaults.
 
-| Environment Variable Name | Default Value                    | Description                   |
-|---------------------------|----------------------------------|-------------------------------|
-| `MONGO_DB_URI`            | `mongodb://localhost:27017/udia` | Connection string for MongoDB |
-| `PORT`                    | `3000`                           | Port for serving http server  |
+| Environment Variable Name | Default Value                     | Description                   |
+|---------------------------|-----------------------------------|-------------------------------|
+| `NODE_ENV`                | `development`                     | `development | test | prod`   |
+| `MONGO_DB_URI`            | `mongodb://localhost:27017/udia`  | Connection string for MongoDB |
+| `JWT_SECRET`              | `UDIA Development JWT Secret Key` | JWT Secret Key                |
+| `PORT`                    | `3000`                            | Port for serving http server  |
 
 ## License
 

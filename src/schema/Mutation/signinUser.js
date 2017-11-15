@@ -12,6 +12,6 @@ const signinUser = async (root, data, { mongo: { Users } }) => {
     });
     return { token, user };
   }
-}
+};
 
 module.exports = signinUser;

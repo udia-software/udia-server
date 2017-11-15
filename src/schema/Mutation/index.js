@@ -7,5 +7,5 @@ module.exports = {
   createLink,
   createVote,
   createUser,
-  signinUser,
-}
+  signinUser
+};

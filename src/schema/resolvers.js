@@ -1,7 +1,5 @@
-const { ObjectID } = require("mongodb");
-const bcrypt = require("bcrypt");
 const Query = require("./Query");
-const Mutation = require("./Mutation")
+const Mutation = require("./Mutation");
 const pubsub = require("../pubsub");
 
 module.exports = {

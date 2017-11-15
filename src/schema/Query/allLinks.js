@@ -15,7 +15,7 @@ function buildFilters({ OR = [], description_contains, url_contains }) {
   return filters;
 }
 
-const allLinks = async (root, { filter, skip, first }, { mongo: { Links, Users } }) => {
+const allLinks = async (root, { filter, skip, first }, { mongo: { Links } }) => {
   let query = filter ? { $or: buildFilters(filter) } : {};
   const cursor = Links.find(query);
   if (first) {
@@ -25,6 +25,6 @@ const allLinks = async (root, { filter, skip, first }, { mongo: { Links, Users }
     cursor.skip(skip);
   }
   return await cursor.toArray();
-}
+};
 
 module.exports = allLinks;

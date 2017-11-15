@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET } = require("./constants");
-const { ObjectID } = require('mongodb');
-
+const { ObjectID } = require("mongodb");
 
 const authenticate = async ({ headers: { authorization } }, Users) => {
   const token = authorization || "";
@@ -10,7 +9,7 @@ const authenticate = async ({ headers: { authorization } }, Users) => {
   // but I want to eventually store banned state, hold actual sessions, etc.
   const user = await Users.findOne({_id: new ObjectID(tokenPayload.id)});
   return user;
-}
+};
 
 module.exports = {
   authenticate
