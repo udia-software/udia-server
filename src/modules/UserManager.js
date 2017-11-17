@@ -1,4 +1,5 @@
 "use strict";
+
 const DataLoader = require("dataloader");
 const { ObjectID } = require("mongodb");
 const { hashPassword } = require("./Auth");
@@ -12,29 +13,36 @@ class UserManager {
     });
   }
 
+  /**
+   * Function for dataloader to batch lookup of users
+   * @param {Array<string>} keys - Arrays of user ids to batch lookup
+   */
   async _batchUsers(keys) {
-    const objectIdKeys = keys.map(key => new ObjectID(key));
-    return await this.collection.find({ _id: { $in: objectIdKeys } }).toArray();
+    return await this.collection.find({ _id: { $in: keys } }).toArray();
   }
 
+  /**
+   * Create a user and store in the DB
+   * @param {string} name - Name of the user
+   * @param {string} email - Email of the user
+   * @param {string} rawPassword - Raw Password of the user
+   */
   async createUser(name, email, rawPassword) {
     const existingEmail = await this.collection.find({ email }).toArray();
     if (existingEmail.length) {
-      throw new ValidationError("Email is already in use by another user.", "email");
+      throw new ValidationError(
+        "Email is already in use by another user.",
+        "email"
+      );
     }
     const password = await hashPassword(rawPassword);
-    const newUser = {
-      name,
-      email,
-      password
-    };
+    const newUser = { name, email, password };
     const response = await this.collection.insert(newUser);
-    return Object.assign({ id: response.insertedIds[0] }, { name, email });
+    return response.ops[0];
   }
 
   async getUserById(id) {
-    // return this.userLoader.load(id);
-    return await this.collection.findOne({ _id: new ObjectID(id)});
+    return await this.userLoader.load(id);
   }
 
   async getUserByEmail(email) {

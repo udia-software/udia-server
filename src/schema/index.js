@@ -4,7 +4,7 @@ const resolvers = require("./resolvers");
 // Define types here
 const typeDefs = `
   type Link {
-    id: ID!
+    _id: ID!
     url: String!
     description: String!
     postedBy: User!
@@ -12,7 +12,7 @@ const typeDefs = `
   }
 
   type Vote {
-    id: ID!
+    _id: ID!
     user: User!
     link: Link!
   }
@@ -34,7 +34,7 @@ const typeDefs = `
   }
 
   type User {
-    id: ID!
+    _id: ID!
     name: String!
     email: String!
     votes: [Vote!]!

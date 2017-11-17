@@ -1,9 +1,9 @@
-const Auth = require("../src/modules/Auth");
-const UserManager = require("../src/modules/UserManager");
-const testHelper = require("./testhelper");
+const Auth = require("../../src/modules/Auth");
+const UserManager = require("../../src/modules/UserManager");
+const testHelper = require("../testhelper");
 
 beforeEach(async done => {
-  await testHelper.initializeTestState();
+  await testHelper.initializeTestState(true);
   return await done();
 });
 
@@ -28,23 +28,18 @@ describe("Auth Module", () => {
     const userManager = new UserManager(db.collection("users"));
 
     const newUserData = await userManager.createUser(name, email, rawPassword);
-    expect(newUserData).toEqual(expect.anything());
-    expect(newUserData.email).toBe(email);
-    expect(newUserData.name).toBe(name);
-    expect(newUserData).not.toHaveProperty("password");
-
     const { token, user } = await Auth.authenticateUser(
       rawPassword,
       email,
       userManager
     );
-    expect(await userManager.getUserById(newUserData.id)).toEqual(user);
+    expect(await userManager.getUserById(newUserData._id)).toEqual(user);
 
     const loggedUserData = await Auth.verifyUserJWT(
       { headers: { authorization: token } },
       userManager
     );
-    expect(await userManager.getUserById(newUserData.id)).toEqual(
+    expect(await userManager.getUserById(newUserData._id)).toEqual(
       loggedUserData
     );
     return await done();

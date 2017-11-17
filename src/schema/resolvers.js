@@ -11,7 +11,7 @@ module.exports = {
     }
   },
   Link: {
-    id: root => root._id || root.id,
+    _id: root => root._id || root.id,
     postedBy: async ({ postedById }, data, { Users }) => {
       return await Users.getUserById(postedById);
     },
@@ -20,7 +20,7 @@ module.exports = {
     }
   },
   Vote: {
-    id: root => root._id || root.id,
+    _id: root => root._id || root.id,
     user: async ({ userId }, data, { Users }) => {
       return await Users.getUserById(userId);
     },
@@ -29,7 +29,7 @@ module.exports = {
     }
   },
   User: {
-    id: root => root._id || root.id,
+    _id: root => root._id || root.id,
     votes: async ({ _id }, data, { Votes }) => {
       return await Votes.getVotesByUserId(_id);
     }

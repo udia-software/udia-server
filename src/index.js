@@ -1,3 +1,4 @@
+/* @flow */
 "use strict";
 
 const express = require("express");
@@ -15,36 +16,46 @@ const LinkManager = require("./modules/LinkManager");
 const UserManager = require("./modules/UserManager");
 const VoteManager = require("./modules/VoteManager");
 
-const buildOptions = async (req, res, next) => {
-  const mongo = await connectMongo();
-  const userManager = new UserManager(mongo.collection("users"));
-  const user = await verifyUserJWT(req, userManager);
-  return {
-    context: {
-      Users: userManager,
-      Votes: new VoteManager(mongo.collection("votes")),
-      Links: new LinkManager(mongo.collection("links")),
-      user
-    },
-    formatError: error => {
-      const data = formatError(error);
-      const { originalError } = error;
-      data.field = originalError && originalError.field;
-      return data;
-    },
-    schema
-  };
-};
-
 const start = async () => {
-  let app = express();
+  const db = await connectMongo();
+  const app = express();
+
+  const buildOptions = async req => {
+    const userManager = new UserManager(db.collection("users"));
+  
+    let user = null;
+    try {
+      await verifyUserJWT(req, userManager);
+    } catch (_) {
+      user = null;
+    }
+  
+    return {
+      context: {
+        Users: userManager,
+        Votes: new VoteManager(db.collection("votes")),
+        Links: new LinkManager(db.collection("links")),
+        user
+      },
+      formatError: error => {
+        return {
+          ...formatError(error),
+          field: error.originalError && error.originalError.field
+        };
+      },
+      schema
+    };
+  };
+
+  // developer route. this will change if you nuke the db
+  const jwt = "";
 
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
   app.use(
     "/graphiql",
     graphiqlExpress({
       endpointURL: "/graphql",
-      passHeader: "'Authorization': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVhMGNjMmFjMDcyZTA5OTllOWNlMDM3ZiIsImlhdCI6MTUxMDc4NjQxMCwibmJmIjoxNTEwNzg2NDEwLCJleHAiOjE1MTA5NTkyMTB9.est14Z3S_wiPpeGWa2A8QPmvE2S-C_jDGJbgl_4N3co'",
+      passHeader: jwt && `'Authorization': '${jwt}'` || null,
       subscriptionsEndpoint: `ws://0.0.0.0:${PORT}/subscriptions`
     })
   );

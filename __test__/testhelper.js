@@ -4,6 +4,10 @@ const connectMongo = require("../src/connectMongo");
 
 let _mongo = null;
 
+/**
+ * Instantiate an Mongo database connection and return the database.
+ * @param {boolean} clearDatabase - Clear the db (default true)
+ */
 async function initializeTestState(clearDatabase = true) {
   if (!_mongo) {
     _mongo = await connectMongo();
@@ -14,6 +18,10 @@ async function initializeTestState(clearDatabase = true) {
   return _mongo;
 }
 
+/**
+ * Remove all the data in your Mongo database
+ * @param {boolean} closeDatabase - Close the db connection (default false)
+ */
 async function tearDownTestState(closeDatabase = false) {
   const db = await getDatabase();
   const collections = await db.listCollections().toArray();

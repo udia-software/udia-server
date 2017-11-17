@@ -1,4 +1,5 @@
 "use strict";
+
 const { ObjectID } = require("mongodb");
 const { URL } = require("url");
 const { ValidationError } = require("./Errors");
@@ -40,6 +41,7 @@ class LinkManager {
         "postedById"
       );
     }
+    this._assertValidLink(url);
     const newLink = { postedById, url, description };
     const response = await this.collection.insert(newLink);
     return Object.assign({ id: response.insertedIds[0] }, newLink);

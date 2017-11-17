@@ -1,4 +1,5 @@
 "use strict";
+
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET, SALT_ROUNDS } = require("../constants");
@@ -13,7 +14,7 @@ async function hashPassword(rawPassword) {
 
 /**
  * Given a jwt token, validate and return the corresponding user
- * @param {express.request} param0 - express request object
+ * @param {express} param0 - express object to get authorization token from
  * @param {UserManager} Users - User Manager instance
  */
 async function verifyUserJWT({ headers: { authorization } }, Users) {
