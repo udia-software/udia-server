@@ -15,29 +15,30 @@ const LinkManager = require("./modules/LinkManager");
 const UserManager = require("./modules/UserManager");
 const VoteManager = require("./modules/VoteManager");
 
-const start = async () => {
-  const mongo = await connectMongo();
-  let app = express();
 
-  const buildOptions = async (req, res, next) => {
-    const userManager = new UserManager(mongo.Users);
-    const user = await verifyUserJWT(req, userManager);
-    return {
-      context: {
-        Users: userManager,
-        Votes: new VoteManager(mongo.Votes),
-        Links: new LinkManager(mongo.Links),
-        user
-      },
-      formatError: error => {
-        const data = formatError(error);
-        const { originalError } = error;
-        data.field = originalError && originalError.field;
-        return data;
-      },
-      schema
-    };
+const buildOptions = async (req, res, next) => {
+  const mongo = await connectMongo();
+  const userManager = new UserManager(mongo.Users);
+  const user = await verifyUserJWT(req, userManager);
+  return {
+    context: {
+      Users: userManager,
+      Votes: new VoteManager(mongo.Votes),
+      Links: new LinkManager(mongo.Links),
+      user
+    },
+    formatError: error => {
+      const data = formatError(error);
+      const { originalError } = error;
+      data.field = originalError && originalError.field;
+      return data;
+    },
+    schema
   };
+};
+
+const start = async () => {
+  let app = express();
 
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
   app.use(

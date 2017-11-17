@@ -10,6 +10,3 @@ services:
 before_script:
   - sleep 5
   - mongo mydb_test --eval 'db.createUser({user:"travis",pwd:"test",roles:["readWrite"]});'
-env:
-  - NODE_ENV="test"
-  - MONGO_DB_URI	mongodb://travis:test@127.0.0.1:27017/udia
