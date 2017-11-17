@@ -35,7 +35,10 @@ class LinkManager {
   async createLink(url, description, postedBy) {
     const postedById = postedBy && postedBy._id;
     if (!postedById) {
-      throw new ValidationError("Must be authenticated to create links.");
+      throw new ValidationError(
+        "Must be authenticated to create links.",
+        "postedById"
+      );
     }
     const newLink = { postedById, url, description };
     const response = await this.collection.insert(newLink);
@@ -55,7 +58,7 @@ class LinkManager {
   }
 
   async getLinkById(id) {
-    const link = await this.collection.findOne({_id: new ObjectID(id)});
+    const link = await this.collection.findOne({ _id: new ObjectID(id) });
     return link;
   }
 }

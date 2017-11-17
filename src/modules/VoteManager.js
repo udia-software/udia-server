@@ -1,5 +1,6 @@
 "use strict";
 const { ObjectID } = require("mongodb");
+const { ValidationError } = require("./Errors");
 
 class VoteManager {
   constructor(voteCollection) {
@@ -7,8 +8,12 @@ class VoteManager {
   }
 
   async createVote(linkId, user) {
+    const userId = user && user._id;
+    if (!userId) {
+      throw new ValidationError("Must be authenticated to vote.", "userId");
+    }
     const newVote = {
-      userId: user && user._id,
+      userId,
       linkId: new ObjectID(linkId)
     };
     const response = await this.collection.insert(newVote);

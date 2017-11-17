@@ -6,35 +6,14 @@ const { graphqlExpress, graphiqlExpress } = require("apollo-server-express");
 const { execute, subscribe, formatError } = require("graphql");
 const { createServer } = require("http");
 const { SubscriptionServer } = require("subscriptions-transport-ws");
-const { Logger, MongoClient } = require("mongodb");
 
-const { NODE_ENV, MONGO_URI, PORT } = require("./constants");
+const { PORT } = require("./constants");
+const connectMongo = require("./connectMongo");
 const schema = require("./schema");
 const { verifyUserJWT } = require("./modules/Auth");
 const LinkManager = require("./modules/LinkManager");
 const UserManager = require("./modules/UserManager");
 const VoteManager = require("./modules/VoteManager");
-
-const connectMongo = async () => {
-  const db = await MongoClient.connect(MONGO_URI);
-
-  // Development Performance Logging
-  if (NODE_ENV === "development") {
-    let logCount = 0;
-    Logger.setCurrentLogger(msg => {
-      // eslint-disable-next-line no-console
-      console.log(`MONGO DB REQUEST ${++logCount}: ${msg}`);
-    });
-    Logger.setLevel("debug");
-    Logger.filter("class", ["Cursor"]);
-  }
-
-  return {
-    Links: db.collection("links"),
-    Users: db.collection("users"),
-    Votes: db.collection("votes")
-  };
-};
 
 const start = async () => {
   const mongo = await connectMongo();
