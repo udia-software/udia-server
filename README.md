@@ -1,5 +1,8 @@
 # Udia Server
 
+[![Build Status](https://travis-ci.org/udia-software/udia-server.svg?branch=master)](https://travis-ci.org/udia-software/udia-server)
+[![Coverage Status](https://coveralls.io/repos/github/udia-software/udia-server/badge.svg?branch=master)](https://coveralls.io/github/udia-software/udia-server?branch=master)
+
 * Note: This is not ready for production.
 
 ## Quickstart
