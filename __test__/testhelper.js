@@ -2,38 +2,39 @@
 
 const connectMongo = require("../src/connectMongo");
 
-let collections = null;
+let _mongo = null;
 
 async function initializeTestState(clearDatabase = true) {
-  if (!collections) {
-    collections = await connectMongo();
+  if (!_mongo) {
+    _mongo = await connectMongo();
   }
   if (clearDatabase) {
     await tearDownTestState();
   }
-  return collections;
+  return _mongo;
 }
 
-async function tearDownTestState() {
-  if (collections) {
-    for (let key in collections) {
-      if (!collections.hasOwnProperty(key)) continue;
-      try {
-        let collection = collections[key];
-        await collection.remove();
-      } catch (_) {
-        _;
-      }
+async function tearDownTestState(closeDatabase = false) {
+  const db = await getDatabase();
+  const collections = await db.listCollections().toArray();
+  for (let collection in collections) {
+    try {
+      await db.collection(collections[collection].name).remove();
+    } catch (_) {
+      _;
     }
+  }
+  if (closeDatabase) {
+    await db.close();
   }
 }
 
-async function getCollections() {
+async function getDatabase() {
   return await initializeTestState(false);
 }
 
 module.exports = {
   initializeTestState,
   tearDownTestState,
-  getCollections
+  getDatabase
 };

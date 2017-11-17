@@ -4,26 +4,28 @@ const testHelper = require("./testhelper");
 
 beforeEach(async done => {
   await testHelper.initializeTestState();
-  await done();
+  return await done();
 });
 
-// fuck it
-afterAll(() => setTimeout(() => process.exit(), 1000));
+afterAll(async done => {
+  await testHelper.tearDownTestState(true);
+  return await done();
+});
 
 describe("Auth Module", () => {
   it("should hash a raw password", async done => {
     const rawPassword = "Secret123";
     const hashPassword = await Auth.hashPassword(rawPassword);
     expect(rawPassword).not.toBe(hashPassword);
-    await done();
+    return await done();
   });
 
   it("should authenticate a valid user", async done => {
     const name = "Test User";
     const rawPassword = "Secret123";
     const email = "test@test.com";
-    const { Users } = await testHelper.getCollections();
-    const userManager = new UserManager(Users);
+    const db = await testHelper.getDatabase();
+    const userManager = new UserManager(db.collection("users"));
 
     const newUserData = await userManager.createUser(name, email, rawPassword);
     expect(newUserData).toEqual(expect.anything());
@@ -45,6 +47,6 @@ describe("Auth Module", () => {
     expect(await userManager.getUserById(newUserData.id)).toEqual(
       loggedUserData
     );
-    await done();
+    return await done();
   });
 });

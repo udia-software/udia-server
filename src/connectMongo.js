@@ -1,7 +1,7 @@
+"use strict";
+
 const { Logger, MongoClient } = require("mongodb");
 const { NODE_ENV, MONGO_URI } = require("./constants");
-
-"use strict";
 
 const connectMongo = async () => {
   const db = await MongoClient.connect(MONGO_URI);
@@ -17,11 +17,8 @@ const connectMongo = async () => {
     Logger.filter("class", ["Cursor"]);
   }
 
-  return {
-    Links: db.collection("links"),
-    Users: db.collection("users"),
-    Votes: db.collection("votes")
-  };
+
+  return db;
 };
 
 module.exports = connectMongo;

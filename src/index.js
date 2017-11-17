@@ -15,16 +15,15 @@ const LinkManager = require("./modules/LinkManager");
 const UserManager = require("./modules/UserManager");
 const VoteManager = require("./modules/VoteManager");
 
-
 const buildOptions = async (req, res, next) => {
   const mongo = await connectMongo();
-  const userManager = new UserManager(mongo.Users);
+  const userManager = new UserManager(mongo.collection("users"));
   const user = await verifyUserJWT(req, userManager);
   return {
     context: {
       Users: userManager,
-      Votes: new VoteManager(mongo.Votes),
-      Links: new LinkManager(mongo.Links),
+      Votes: new VoteManager(mongo.collection("votes")),
+      Links: new LinkManager(mongo.collection("links")),
       user
     },
     formatError: error => {
