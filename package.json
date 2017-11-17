@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "jest --coverage",
+    "test": "jest --coverage && cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js",
     "lint": "eslint src __test__",
     "start": "node ./src/index.js"
   },
@@ -38,6 +38,7 @@
     "subscriptions-transport-ws": "^0.9.1"
   },
   "devDependencies": {
+    "coveralls": "^3.0.0",
     "eslint": "^4.11.0",
     "jest": "^21.2.1",
     "jest-cli": "^21.2.1"
