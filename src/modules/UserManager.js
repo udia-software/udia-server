@@ -18,7 +18,8 @@ class UserManager {
    * @param {Array<string>} keys - Arrays of user ids to batch lookup
    */
   async _batchUsers(keys) {
-    return await this.collection.find({ _id: { $in: keys.map(key => new ObjectID(key)) } }).toArray();
+    // TODO: this fails the test getUserById call for some reason!!
+    return await this.collection.find({ _id: { $in: keys } }).toArray();
   }
 
   /**
@@ -42,7 +43,9 @@ class UserManager {
   }
 
   async getUserById(id) {
-    return await this.userLoader.load(id);
+    // TODO: See _batchUsers as to why the user loader is commented out
+    // return await this.userLoader.load(id);
+    return await this.collection.findOne({ _id: new ObjectID(id) });
   }
 
   async getUserByEmail(email) {
