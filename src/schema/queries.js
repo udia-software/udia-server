@@ -5,5 +5,5 @@ const allLinks = async (root, { filter, skip, first }, { Links }) => {
 };
 
 module.exports = {
-  allLinks
+  // allLinks
 };

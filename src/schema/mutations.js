@@ -31,7 +31,7 @@ const signinUser = async (root, data, { Users }) => {
 };
 
 module.exports = {
-  createLink,
+  // createLink,
   createVote,
   createUser,
   signinUser
