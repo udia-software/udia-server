@@ -18,7 +18,7 @@ class UserManager {
    * @param {Array<string>} keys - Arrays of user ids to batch lookup
    */
   async _batchUsers(keys) {
-    return await this.collection.find({ _id: { $in: keys } }).toArray();
+    return await this.collection.find({ _id: { $in: keys.map(key => new ObjectID(key)) } }).toArray();
   }
 
   /**
