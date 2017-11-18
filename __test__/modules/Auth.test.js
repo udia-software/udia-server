@@ -33,6 +33,7 @@ describe("Auth Module", () => {
       email,
       userManager
     );
+    expect(newUserData._id).toBeDefined();
     expect(await userManager.getUserById(newUserData._id)).toEqual(user);
 
     const loggedUserData = await Auth.verifyUserJWT(
