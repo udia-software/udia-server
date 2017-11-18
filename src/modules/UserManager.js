@@ -19,7 +19,7 @@ class UserManager {
    */
   async _batchUsers(keys) {
     // TODO: this fails the test getUserById call for some reason!!
-    return await this.collection.find({ _id: { $in: keys } }).toArray();
+    return await this.collection.find({ _id: { $in: keys.map(key => new ObjectID(key)) } }).toArray();
   }
 
   /**
