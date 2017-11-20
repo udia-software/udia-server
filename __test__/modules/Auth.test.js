@@ -38,7 +38,9 @@ describe("Auth Module", () => {
     let hammer;
     let hammerCount = 1;
     do {
-      console.log(hammerCount);
+      if (hammerCount % 100 === 0) {
+        console.log(hammerCount);
+      }
       hammer = await userManager.getUserById(newUserData._id);
       hammerCount += 1;
     } while (!hammer);
