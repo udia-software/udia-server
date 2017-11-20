@@ -34,6 +34,15 @@ describe("Auth Module", () => {
       userManager
     );
     expect(newUserData._id).toBeDefined();
+    console.log(typeof newUserData._id, newUserData._id);
+    let hammer;
+    let hammerCount = 1;
+    do {
+      console.log(hammerCount);
+      hammer = await userManager.getUserById(newUserData._id);
+      hammerCount += 1;
+    } while (!hammer);
+
     expect(await userManager.getUserById(newUserData._id)).toEqual(user);
 
     const loggedUserData = await Auth.verifyUserJWT(

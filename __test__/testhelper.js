@@ -10,7 +10,6 @@ let _mongo = null;
  */
 async function initializeTestState(clearDatabase = true) {
   if (!_mongo) {
-    console.log("connect mongo called");
     _mongo = await connectMongo();
   }
   if (clearDatabase) {
