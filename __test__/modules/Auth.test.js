@@ -1,3 +1,5 @@
+"use strict";
+
 const Auth = require("../../src/modules/Auth");
 const UserManager = require("../../src/modules/UserManager");
 const testHelper = require("../testhelper");
@@ -34,17 +36,6 @@ describe("Auth Module", () => {
       userManager
     );
     expect(newUserData._id).toBeDefined();
-    console.log(typeof newUserData._id, newUserData._id);
-    let hammer;
-    let hammerCount = 1;
-    do {
-      if (hammerCount % 100 === 0) {
-        console.log(hammerCount);
-      }
-      hammer = await userManager.getUserById(newUserData._id);
-      hammerCount += 1;
-    } while (!hammer);
-
     expect(await userManager.getUserById(newUserData._id)).toEqual(user);
 
     const loggedUserData = await Auth.verifyUserJWT(

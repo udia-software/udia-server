@@ -18,8 +18,9 @@ class UserManager {
    * @param {Array<string>} keys - Arrays of user ids to batch lookup
    */
   async _batchUsers(keys) {
-    // TODO: this fails the test getUserById call for some reason!!
-    return await this.collection.find({ _id: { $in: keys.map(key => new ObjectID(key)) } }).toArray();
+    return await this.collection
+      .find({ _id: { $in: keys.map(key => new ObjectID(key)) } })
+      .toArray();
   }
 
   /**
@@ -29,6 +30,7 @@ class UserManager {
    * @param {string} rawPassword - Raw Password of the user
    */
   async createUser(name, email, rawPassword) {
+    // if email already exists, user already exists, throw an error
     const existingEmail = await this.collection.find({ email }).toArray();
     if (existingEmail.length) {
       throw new ValidationError(
@@ -36,18 +38,30 @@ class UserManager {
         "email"
       );
     }
-    const password = await hashPassword(rawPassword);
-    const newUser = { name, email, password };
+    const passwordHash = await hashPassword(rawPassword);
+    const newUser = {
+      name,
+      email,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      passwordHash
+    };
     const response = await this.collection.insert(newUser);
-    return response.ops[0];
+    return Object.assign({ _id: response.insertedIds[0] }, newUser);
   }
 
+  /**
+   * Get a user from the db by ID
+   * @param {string} id - string representation of mongo object ID
+   */
   async getUserById(id) {
-    // TODO: See _batchUsers as to why the user loader is commented out
-    // return await this.userLoader.load(id);
-    return await this.collection.findOne({ _id: new ObjectID(id) });
+    return await this.userLoader.load(id);
   }
 
+  /**
+   * Get a user from the db by email
+   * @param {string} email - user's email
+   */
   async getUserByEmail(email) {
     return await this.collection.findOne({ email });
   }

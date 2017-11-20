@@ -1,3 +1,4 @@
+const { Kind } = require("graphql/language");
 const Query = require("./queries");
 const Mutation = require("./mutations");
 const pubSub = require("../pubSub");
@@ -10,14 +11,17 @@ module.exports = {
       subscribe: () => pubSub.asyncIterator("Link")
     }
   },
+  Node: {
+    createdBy: async ({ createdById }, data, { Users }) => {
+      return await Users.getUserById(createdById);
+    }
+  },
   Link: {
-    id: root => root._id || root.id,
     createdBy: async ({ postedById }, data, { Users }) => {
       return await Users.getUserById(postedById);
     }
   },
   Vote: {
-    id: root => root._id || root.id,
     user: async ({ userId }, data, { Users }) => {
       return await Users.getUserById(userId);
     },
@@ -26,9 +30,22 @@ module.exports = {
     }
   },
   User: {
-    id: root => root._id || root.id,
     votes: async ({ _id }, data, { Votes }) => {
       return await Votes.getVotesByUserId(_id);
+    }
+  },
+  DateTime: {
+    __parseValue(value) {
+      return new Date(value); // value from the client
+    },
+    __serialize(value) {
+      return value.getTime(); // value sent to the client
+    },
+    parseLiteral(ast) {
+      if (ast.kind === Kind.INT) {
+        return parseInt(ast.value, 10); // ast value is always in string format
+      }
+      return null;
     }
   }
 };

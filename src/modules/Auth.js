@@ -32,7 +32,7 @@ async function verifyUserJWT({ headers: { authorization } }, Users) {
  */
 async function authenticateUser(rawPassword, email, Users) {
   const user = await Users.getUserByEmail(email);
-  const passwordsMatch = await bcrypt.compare(rawPassword, user.password);
+  const passwordsMatch = await bcrypt.compare(rawPassword, user.passwordHash);
   if (passwordsMatch) {
     const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, {
       expiresIn: "2 days",

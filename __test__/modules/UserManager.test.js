@@ -1,8 +1,10 @@
+"use strict";
+
 const UserManager = require("../../src/modules/UserManager");
 const testHelper = require("../testhelper");
 
 beforeEach(async done => {
-  await testHelper.initializeTestState(true);
+  await testHelper.initializeTestState();
   return await done();
 });
 
@@ -24,7 +26,7 @@ describe("UserManager Module", () => {
     expect(newUserData.email).toBe(email);
     expect(newUserData.name).toBe(name);
 
-    return await done();
+    done();
   });
 
   it("should error on creating user with taken email", async done => {
@@ -43,7 +45,7 @@ describe("UserManager Module", () => {
     } catch (err) {
       expect(err).toBeDefined();
     }
-    return await done();
+    done();
   });
 
   it("should get a user by ID", async done => {
@@ -55,7 +57,7 @@ describe("UserManager Module", () => {
     const user = await userManager.createUser(name, email, rawPassword);
     const returnedUser = await userManager.getUserById(user._id);
     expect(returnedUser).toEqual(user);
-    return await done();
+    done();
   });
 
   it("should get a user by email", async done => {
@@ -67,6 +69,6 @@ describe("UserManager Module", () => {
     const user = await userManager.createUser(name, email, rawPassword);
     const returnedUser = await userManager.getUserByEmail(email);
     expect(returnedUser).toEqual(user);
-    return await done();
+    done();
   });
 });

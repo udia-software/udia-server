@@ -37,12 +37,27 @@ async function tearDownTestState(closeDatabase = false) {
   }
 }
 
+/**
+ * Return the current test database instance
+ */
 async function getDatabase() {
   return await initializeTestState(false);
+}
+
+async function createTestUser() {
+  const UserManager = require("../src/modules/UserManager");
+  const db = await getDatabase();
+  const userManager = new UserManager(db.collection("users"));
+
+  const name = "Test User";
+  const rawPassword = "Secret123";
+  const email = "test@test.com";
+  return await userManager.createUser(name, email, rawPassword);
 }
 
 module.exports = {
   initializeTestState,
   tearDownTestState,
-  getDatabase
+  getDatabase,
+  createTestUser
 };

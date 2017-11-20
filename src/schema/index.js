@@ -4,7 +4,7 @@ const resolvers = require("./resolvers");
 // Define types here
 const typeDefs = `
   type Node @model {
-    id: ID! @isUnique
+    _id: ID! @isUnique
     type: NodeType!
     title: String!
     content: String!
@@ -22,7 +22,7 @@ const typeDefs = `
   }
   
   type Link @model {
-    id: ID! @isUnique
+    _id: ID! @isUnique
     type: LinkType!
     createdBy: User! @relation(name: "UserLinks")
     source: Node! @relation(name: "NodeOutLinks")
@@ -35,7 +35,7 @@ const typeDefs = `
   }
 
   type Vote @model {
-    id: ID! @isUnique
+    _id: ID! @isUnique
     type: VoteType!
     user: User! @relation(name: "UserVotes")
     node: Node! @relation(name: "NodeVotes")
@@ -47,7 +47,7 @@ const typeDefs = `
   }
 
   type User @model {
-    id: ID! @isUnique
+    _id: ID! @isUnique
     email: String @isUnique
     name: String!
     votes: [Vote!]! @relation(name: "UserVotes")

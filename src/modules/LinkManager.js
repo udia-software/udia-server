@@ -44,7 +44,7 @@ class LinkManager {
     this._assertValidLink(url);
     const newLink = { postedById, url, description };
     const response = await this.collection.insert(newLink);
-    return Object.assign({ id: response.insertedIds[0] }, newLink);
+    return Object.assign({ _id: response.insertedIds[0] }, newLink);
   }
 
   async getLinks(filter, skip, first) {

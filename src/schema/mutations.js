@@ -24,6 +24,13 @@ const createUser = async (root, data, { Users }) => {
   return await Users.createUser(name, email, rawPassword);
 };
 
+const createNode = async (root, data, { Nodes, user }) => {
+  const title = data.title;
+  const content = data.content;
+  const type = data.type;
+  return await Nodes.createNode(user, type, title, content);
+};
+
 const signinUser = async (root, data, { Users }) => {
   const email = data.email.email;
   const rawPassword = data.email.password;
@@ -32,6 +39,7 @@ const signinUser = async (root, data, { Users }) => {
 
 module.exports = {
   // createLink,
+  createNode,
   createVote,
   createUser,
   signinUser

@@ -1,4 +1,3 @@
-/* @flow */
 "use strict";
 
 const express = require("express");
@@ -13,6 +12,7 @@ const connectMongo = require("./connectMongo");
 const schema = require("./schema");
 const { verifyUserJWT } = require("./modules/Auth");
 const LinkManager = require("./modules/LinkManager");
+const NodeManager = require("./modules/NodeManager");
 const UserManager = require("./modules/UserManager");
 const VoteManager = require("./modules/VoteManager");
 
@@ -25,7 +25,7 @@ const start = async () => {
   
     let user = null;
     try {
-      await verifyUserJWT(req, userManager);
+      user = await verifyUserJWT(req, userManager);
     } catch (_) {
       user = null;
     }
@@ -33,6 +33,7 @@ const start = async () => {
     return {
       context: {
         Users: userManager,
+        Nodes: new NodeManager(db.collection("nodes")),
         Votes: new VoteManager(db.collection("votes")),
         Links: new LinkManager(db.collection("links")),
         user
@@ -48,7 +49,7 @@ const start = async () => {
   };
 
   // developer route. this will change if you nuke the db
-  const jwt = "";
+  const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVhMTM1NTRlNGUxMjRmMzRiNWRmNzY1MyIsImlhdCI6MTUxMTIxNjUxMywibmJmIjoxNTExMjE2NTEzLCJleHAiOjE1MTEzODkzMTN9.dMC00qJHfsC6HEhnjRcximipHECg8QdIO5zHl0mo23M";
 
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
   app.use(
