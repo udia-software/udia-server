@@ -35,12 +35,12 @@ class NodeManager {
       throw new ValidationError("User must be authenticated.", "createdBy");
     }
     if (["TEXT", "URL"].indexOf(type) < 0) {
-      throw new ValidationError("Type must be TEXT or URL", "type");
+      throw new ValidationError("Type must be TEXT or URL.", "type");
     }
-    if (!title.trim()) {
+    if (!title || !title.trim()) {
       throw new ValidationError("Title must not be empty.", "title");
     }
-    if (!content.trim()) {
+    if (!content || !content.trim()) {
       throw new ValidationError("Content must not be empty.", "content");
     }
     const newNode = {

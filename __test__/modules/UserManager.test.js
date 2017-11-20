@@ -1,6 +1,7 @@
 "use strict";
 
 const UserManager = require("../../src/modules/UserManager");
+const { ValidationError } = require("../../src/modules/Errors");
 const testHelper = require("../testhelper");
 
 beforeEach(async done => {
@@ -37,14 +38,9 @@ describe("UserManager Module", () => {
     const userManager = new UserManager(db.collection("users"));
 
     await userManager.createUser(name, email, rawPassword);
-    // why does this not work?
-    // expect(await userManager.createUser(name, email, rawPassword)).toThrow();
-    try {
-      const dupUser = await userManager.createUser(name, email, rawPassword);
-      expect(dupUser).toBeUndefined();
-    } catch (err) {
-      expect(err).toBeDefined();
-    }
+    await expect(userManager.createUser(name, email, rawPassword)).rejects.toEqual(
+      new ValidationError("Email is already in use by another user.")
+    );
     done();
   });
 
