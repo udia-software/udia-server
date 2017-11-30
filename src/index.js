@@ -26,7 +26,9 @@ const start = async () => {
     let user = null;
     try {
       user = await verifyUserJWT(req, userManager);
-    } catch (_) {
+    } catch (err) {
+      // eslint-disable-next-line no-console
+      console.error("Could not parse JWT", err);
       user = null;
     }
   
@@ -49,7 +51,7 @@ const start = async () => {
   };
 
   // developer route. this will change if you nuke the db
-  const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVhMTM2YTllNDBkYjFlNDA2MDU4YzYwNyIsImlhdCI6MTUxMTIyMTkyMiwibmJmIjoxNTExMjIxOTIyLCJleHAiOjE1MTEzOTQ3MjJ9.Thd-UIDIdCjy4gi_RCHNJc74z3KgC-Qv7zh95PBLWqE";
+  const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVhMWVmYzNhNzhhN2FlYjM1ZmYwYjVlOCIsImlhdCI6MTUxMTk4MDE1MSwibmJmIjoxNTExOTgwMTUxLCJleHAiOjE1MTIxNTI5NTF9.vpXs7DC9g20DsZQzFYboWvYt5jgPwsHTspsz1TyloGA";
 
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
   app.use(

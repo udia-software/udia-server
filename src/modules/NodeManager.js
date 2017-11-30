@@ -19,7 +19,20 @@ class NodeManager {
   async _batchNodes(keys) {
     return await this.collection
       .find({ _id: { $in: keys.map(key => new ObjectID(key)) } })
-      .toArray();
+      .toArray()
+      .then(nodes => keys.map(id => nodes.find(n => n._id.equals(id)) || null));
+  }
+
+  static _buildFilters({ OR = [], title_contains }) {
+    const filter = title_contains ? {} : null;
+    if (title_contains) {
+      filter.title = { $regex: `.*${title_contains}.*` };
+    }
+    let filters = filter ? [filter] : [];
+    for (let i = 0; i < OR.length; i++) {
+      filters = filters.concat(NodeManager._buildFilters(OR[i]));
+    }
+    return filters;
   }
 
   /**
@@ -61,6 +74,25 @@ class NodeManager {
    */
   async getNodeById(id) {
     return await this.nodeLoader.load(id);
+  }
+
+  /**
+   * Function for getting all nodes by query parameters.
+   * @param {NodeFilter|null} filter - Node Filter object tree
+   * @param {NodeOrderBy|null} orderBy - Node Order By enum
+   * @param {Number|null} skip - integer, number of objects to skip
+   * @param {Number|null} first - integer, number of objects to return after skip
+   */
+  async allNodes(filter, orderBy, skip, first) {
+    let query = filter ? { $or: NodeManager._buildFilters(filter) } : {};
+    const cursor = this.collection.find(query);
+    if (skip) {
+      cursor.skip(skip);
+    }
+    if (first) {
+      cursor.limit(first);
+    }
+    return await cursor.toArray();
   }
 }
 
