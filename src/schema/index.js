@@ -21,6 +21,28 @@ const typeDefs = `
     URL
   }
   
+  input NodeFilter {
+    OR: [NodeFilter!]
+    id: ID
+    title_contains: String
+    content_contains: String
+    createdAt_lt: DateTime
+    createdAt_lte: DateTime
+    createdAt_gt: DateTime
+    createdAt_gte: DateTime
+    updatedAt_lt: DateTime
+    updatedAt_lte: DateTime
+    updatedAt_gt: DateTime
+    updatedAt_gte: DateTime
+  }
+
+  enum NodeOrderBy {
+    createdAt_ASC
+    createdAt_DESC
+    updatedAt_ASC
+    updatedAt_DESC
+  }
+
   type Link @model {
     _id: ID! @isUnique
     type: LinkType!
@@ -65,21 +87,6 @@ const typeDefs = `
       skip: Int,
       first: Int
     ): [Node!]!
-  }
-
-  input NodeFilter {
-    AND: [NodeFilter!]
-    OR: [NodeFilter!]
-    createdAt: DateTime
-    updatedAt: DateTime
-    id: ID
-  }
-
-  enum NodeOrderBy {
-    createdAt_ASC
-    createdAt_DESC
-    updatedAt_ASC
-    updatedAt_DESC
   }
 
   type Mutation {

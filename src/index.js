@@ -51,7 +51,7 @@ const start = async () => {
   };
 
   // developer route. this will change if you nuke the db
-  const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVhMWVmYzNhNzhhN2FlYjM1ZmYwYjVlOCIsImlhdCI6MTUxMTk4MDE1MSwibmJmIjoxNTExOTgwMTUxLCJleHAiOjE1MTIxNTI5NTF9.vpXs7DC9g20DsZQzFYboWvYt5jgPwsHTspsz1TyloGA";
+  const jwt = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVhMjE5MmRlOTU1ZTM2MGUzMjI4NWI1NiIsImlhdCI6MTUxMjE0OTc0MywibmJmIjoxNTEyMTQ5NzQzLCJleHAiOjE1MTIzMjI1NDN9.ugdUkXXav1CgJlLYE9x5N3Gjo7Es42jJ27fbldHORkQ";
 
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
   app.use(

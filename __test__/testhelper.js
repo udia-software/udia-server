@@ -55,9 +55,21 @@ async function createTestUser() {
   return await userManager.createUser(name, email, rawPassword);
 }
 
+async function generateTestNode(
+  db,
+  nodeManager,
+  createdBy,
+  type = "TEXT",
+  title = "Test Node",
+  content = "Test Node Content"
+) {
+  return await nodeManager.createNode(createdBy, type, title, content);
+}
+
 module.exports = {
   initializeTestState,
   tearDownTestState,
   getDatabase,
-  createTestUser
+  createTestUser,
+  generateTestNode
 };

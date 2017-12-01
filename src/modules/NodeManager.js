@@ -23,14 +23,76 @@ class NodeManager {
       .then(nodes => keys.map(id => nodes.find(n => n._id.equals(id)) || null));
   }
 
-  static _buildFilters({ OR = [], title_contains }) {
-    const filter = title_contains ? {} : null;
-    if (title_contains) {
-      filter.title = { $regex: `.*${title_contains}.*` };
+  /**
+   * Recursively build the filter tree. Outputs a mongodb compatible query
+   * @param {NodeFilter} inputFilter - NodeFilter object (refer to schema)
+   */
+  static _buildFilters(inputFilter) {
+    const outputFilter = {};
+    if (inputFilter.id) {
+      outputFilter._id = inputFilter.id;
     }
-    let filters = filter ? [filter] : [];
-    for (let i = 0; i < OR.length; i++) {
-      filters = filters.concat(NodeManager._buildFilters(OR[i]));
+    if (inputFilter.title_contains) {
+      outputFilter.title = { $regex: `.*${inputFilter.title_contains}.*` };
+    }
+    if (inputFilter.content_contains) {
+      outputFilter.content = { $regex: `.*${inputFilter.content_contains}.*` };
+    }
+
+    // createdAt Time queries
+    if (inputFilter.createdAt_lt) {
+      outputFilter.createdAt = {
+        ...(outputFilter.createdAt || {}),
+        $lt: inputFilter.createdAt_lt
+      };
+    }
+    if (inputFilter.createdAt_lte) {
+      outputFilter.createdAt = {
+        ...(outputFilter.createdAt || {}),
+        $lte: inputFilter.createdAt_lte
+      };
+    }
+    if (inputFilter.createdAt_gt) {
+      outputFilter.createdAt = {
+        ...(outputFilter.createdAt || {}),
+        $gt: inputFilter.createdAt_gt
+      };
+    }
+    if (inputFilter.createdAt_gte) {
+      outputFilter.createdAt = {
+        ...(outputFilter.createdAt || {}),
+        $gte: inputFilter.createdAt_gte
+      };
+    }
+
+    // updatedAt Time queries
+    if (inputFilter.updatedAt_lt) {
+      outputFilter.updatedAt = {
+        ...(outputFilter.updatedAt || {}),
+        $lt: inputFilter.updatedAt_lt
+      };
+    }
+    if (inputFilter.updatedAt_lte) {
+      outputFilter.updatedAt = {
+        ...(outputFilter.updatedAt || {}),
+        $lte: inputFilter.updatedAt_lte
+      };
+    }
+    if (inputFilter.updatedAt_gt) {
+      outputFilter.updatedAt = {
+        ...(outputFilter.updatedAt || {}),
+        $gt: inputFilter.updatedAt_gt
+      };
+    }
+    if (inputFilter.updatedAt_gte) {
+      outputFilter.updatedAt = {
+        ...(outputFilter.updatedAt || {}),
+        $gte: inputFilter.updatedAt_gte
+      };
+    }
+    let filters = Object.keys(outputFilter).length ? [outputFilter] : [];
+    for (let i = 0; i < (inputFilter.OR || []).length; i++) {
+      filters = filters.concat(NodeManager._buildFilters(inputFilter.OR[i]));
     }
     return filters;
   }
@@ -56,12 +118,13 @@ class NodeManager {
     if (!content || !content.trim()) {
       throw new ValidationError("Content must not be empty.", "content");
     }
+    const now = new Date();
     const newNode = {
       type,
       title,
       content,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
       createdById
     };
     const response = await this.collection.insert(newNode);
@@ -92,7 +155,24 @@ class NodeManager {
     if (first) {
       cursor.limit(first);
     }
-    return await cursor.toArray();
+
+    switch (orderBy) {
+    case "createdAt_ASC":
+      cursor.sort({ createdAt: 1 });
+      break;
+    case "createdAt_DESC":
+      cursor.sort({ createdAt: -1 });
+      break;
+    case "updatedAt_ASC":
+      cursor.sort({ updatedAt: 1 });
+      break;
+    case "updatedAt_DESC":
+      cursor.sort({ updatedAt: -1 });
+      break;
+    default:
+      break;
+    }
+    return (await cursor.toArray()) || [];
   }
 }
 
