@@ -3,6 +3,7 @@
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const { JWT_SECRET, SALT_ROUNDS } = require("../constants");
+const { ValidationError } = require("./Errors");
 
 /**
  * Take a string password and return the bcrypt hash
@@ -19,9 +20,13 @@ async function hashPassword(rawPassword) {
  */
 async function verifyUserJWT({ headers: { authorization } }, Users) {
   const token = authorization || "";
-  const tokenPayload = jwt.verify(token, JWT_SECRET);
-  const user = await Users.getUserById(tokenPayload.id);
-  return user;
+  try {
+    const tokenPayload = jwt.verify(token, JWT_SECRET);    
+    const user = await Users.getUserById(tokenPayload.id);
+    return user;
+  } catch (_) {
+    return null;
+  }
 }
 
 /**
@@ -32,6 +37,9 @@ async function verifyUserJWT({ headers: { authorization } }, Users) {
  */
 async function authenticateUser(rawPassword, email, Users) {
   const user = await Users.getUserByEmail(email);
+  if (!user) {
+    throw new ValidationError("User not found for given email.", "email");
+  }
   const passwordsMatch = await bcrypt.compare(rawPassword, user.passwordHash);
   if (passwordsMatch) {
     const token = jwt.sign({ id: user._id.toString() }, JWT_SECRET, {
@@ -40,6 +48,7 @@ async function authenticateUser(rawPassword, email, Users) {
     });
     return { token, user };
   }
+  throw new ValidationError("Invalid password.", "rawPassword");
 }
 
 module.exports = {

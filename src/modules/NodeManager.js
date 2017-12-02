@@ -1,6 +1,7 @@
 "use strict";
 
 const DataLoader = require("dataloader");
+const { URL } = require("url");
 const { ObjectID } = require("mongodb");
 const { ValidationError } = require("./Errors");
 
@@ -16,7 +17,7 @@ class NodeManager {
    * Function for dataloader to batch lookup nodes
    * @param {Array<string>} keys - Arrays of node ids to batch lookup
    */
-  async _batchNodes(keys) {
+  async _batchNodes(keys = []) {
     return await this.collection
       .find({ _id: { $in: keys.map(key => new ObjectID(key)) } })
       .toArray()
@@ -104,7 +105,7 @@ class NodeManager {
    * @param {String} title - String, title of node
    * @param {String} content - String, content of node
    */
-  async createNode(createdBy, type, title, content) {
+  async createNode(createdBy, type = "", title = "", content = "") {
     const createdById = createdBy && createdBy._id;
     if (!createdById) {
       throw new ValidationError("User must be authenticated.", "createdBy");
@@ -117,6 +118,13 @@ class NodeManager {
     }
     if (!content || !content.trim()) {
       throw new ValidationError("Content must not be empty.", "content");
+    }
+    if (type === "URL") {
+      try {
+        new URL(content);
+      } catch (_) {
+        throw new ValidationError("Content must be a valid url.", "content");
+      }
     }
     const now = new Date();
     const newNode = {
@@ -135,8 +143,8 @@ class NodeManager {
    * Get a node from the db by ID
    * @param {string} id - string representation of mongo object ID
    */
-  async getNodeById(id) {
-    return await this.nodeLoader.load(id);
+  async getNodeById(id = "") {
+    return await this.nodeLoader.load(id || new ObjectID());
   }
 
   /**
@@ -146,7 +154,7 @@ class NodeManager {
    * @param {Number|null} skip - integer, number of objects to skip
    * @param {Number|null} first - integer, number of objects to return after skip
    */
-  async allNodes(filter, orderBy, skip, first) {
+  async allNodes(filter, orderBy, skip = 0, first = 0) {
     let query = filter ? { $or: NodeManager._buildFilters(filter) } : {};
     const cursor = this.collection.find(query);
     if (skip) {
@@ -172,7 +180,7 @@ class NodeManager {
     default:
       break;
     }
-    return (await cursor.toArray()) || [];
+    return await cursor.toArray();
   }
 }
 

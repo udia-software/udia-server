@@ -1,5 +1,6 @@
 "use strict";
 
+const { ObjectId } = require("mongodb");
 const NodeManager = require("../../src/modules/NodeManager");
 const { ValidationError } = require("../../src/modules/Errors");
 const testHelper = require("../testhelper");
@@ -19,22 +20,33 @@ describe("NodeManager Module", () => {
     it("should create a valid node", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
-      const type = "TEXT";
+      const createdBy = await testHelper.createTestUser({});
       const title = "Test Node";
       const content = "Test Node Content";
 
       const node = await nodeManager.createNode(
         createdBy,
-        type,
+        "TEXT",
         title,
         content
       );
       expect(node).toBeDefined();
       expect(node).toHaveProperty("_id");
-      expect(node.type).toBe(type);
+      expect(node.type).toBe("TEXT");
       expect(node.title).toBe(title);
       expect(node.content).toBe(content);
+      const url = "http://google.com";
+      const urlNode = await nodeManager.createNode(
+        createdBy,
+        "URL",
+        title,
+        url
+      );
+      expect(urlNode).toBeDefined();
+      expect(urlNode).toHaveProperty("_id");
+      expect(urlNode.type).toBe("URL");
+      expect(urlNode.title).toBe(title);
+      expect(urlNode.content).toBe(url);
       done();
     });
 
@@ -54,7 +66,7 @@ describe("NodeManager Module", () => {
     it("should error on creating node without a type", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
+      const createdBy = await testHelper.createTestUser({});
       const title = "Test Node";
       const content = "Test Node Content";
 
@@ -67,7 +79,7 @@ describe("NodeManager Module", () => {
     it("should error on creating node without a title", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
+      const createdBy = await testHelper.createTestUser({});
       const type = "TEXT";
       const content = "Test Node Content";
 
@@ -80,7 +92,7 @@ describe("NodeManager Module", () => {
     it("should error on creating node without content", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
+      const createdBy = await testHelper.createTestUser({});
       const type = "TEXT";
       const title = "Test Node";
 
@@ -89,32 +101,52 @@ describe("NodeManager Module", () => {
       ).rejects.toEqual(new ValidationError("Content must not be empty."));
       done();
     });
+
+    it("should error on creating node with invalid url", async done => {
+      const db = await testHelper.getDatabase();
+      const nodeManager = new NodeManager(db.collection("nodes"));
+      const createdBy = await testHelper.createTestUser({});
+      const type = "URL";
+      const title = "Test Node";
+      const content = "not a url";
+
+      await expect(
+        nodeManager.createNode(createdBy, type, title, content)
+      ).rejects.toEqual(new ValidationError("Content must be a valid url."));
+      done();
+    });
   });
 
   describe("Query", () => {
     it("should dataloader get a node by id", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
-      const node = await testHelper.generateTestNode(
-        db,
-        nodeManager,
+      const createdBy = await testHelper.createTestUser({});
+      const node = await testHelper.generateTestNode({
         createdBy
-      );
+      });
       const getNode = await nodeManager.getNodeById(node._id);
       expect(node).toEqual(getNode);
+      const noNode = await nodeManager.getNodeById(new ObjectId());
+      expect(noNode).toEqual(null);
+      done();
+    });
+
+    it("should filter sanely given defaults", async done => {
+      const db = await testHelper.getDatabase();
+      const nodeManager = new NodeManager(db.collection("nodes"));
+      const nodes = await nodeManager.allNodes(null, null, null, null);
+      expect(nodes).toEqual([]);
       done();
     });
 
     it("should filter a node by id", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
-      const node = await testHelper.generateTestNode(
-        db,
-        nodeManager,
+      const createdBy = await testHelper.createTestUser({});
+      const node = await testHelper.generateTestNode({
         createdBy
-      );
+      });
       const nodes = await nodeManager.allNodes(
         { id: node._id },
         null,
@@ -135,12 +167,10 @@ describe("NodeManager Module", () => {
     it("should filter nodes by title", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
-      const node = await testHelper.generateTestNode(
-        db,
-        nodeManager,
+      const createdBy = await testHelper.createTestUser({});
+      const node = await testHelper.generateTestNode({
         createdBy
-      );
+      });
       const nodes = await nodeManager.allNodes(
         { title_contains: "Test" },
         null,
@@ -161,12 +191,10 @@ describe("NodeManager Module", () => {
     it("should filter nodes by content", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
-      const node = await testHelper.generateTestNode(
-        db,
-        nodeManager,
+      const createdBy = await testHelper.createTestUser({});
+      const node = await testHelper.generateTestNode({
         createdBy
-      );
+      });
       const nodes = await nodeManager.allNodes(
         { content_contains: "Test" },
         null,
@@ -187,13 +215,11 @@ describe("NodeManager Module", () => {
     it("should filter nodes by createdAt", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
+      const createdBy = await testHelper.createTestUser({});
       const beforeNodeTime = new Date(new Date().getTime() - 1000);
-      const node = await testHelper.generateTestNode(
-        db,
-        nodeManager,
+      const node = await testHelper.generateTestNode({
         createdBy
-      );
+      });
       const afterNodeTime = new Date(new Date().getTime() + 1000);
       const ltNodes = await nodeManager.allNodes(
         { createdAt_lt: afterNodeTime },
@@ -229,13 +255,11 @@ describe("NodeManager Module", () => {
     it("should filter nodes by updatedAt", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
+      const createdBy = await testHelper.createTestUser({});
       const beforeNodeTime = new Date(new Date().getTime() - 1000);
-      const node = await testHelper.generateTestNode(
-        db,
-        nodeManager,
+      const node = await testHelper.generateTestNode({
         createdBy
-      );
+      });
       const afterNodeTime = new Date(new Date().getTime() + 1000);
       const ltNodes = await nodeManager.allNodes(
         { updatedAt_lt: afterNodeTime },
@@ -271,18 +295,15 @@ describe("NodeManager Module", () => {
     it("should order by createdAt", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
-      const nodeA = await testHelper.generateTestNode(
-        db,
-        nodeManager,
+      const createdBy = await testHelper.createTestUser({});
+      const nodeA = await testHelper.generateTestNode({
         createdBy
-      );
+      });
       await new Promise(resolve => setTimeout(resolve, 2));
-      const nodeB = await testHelper.generateTestNode(
-        db,
+      const nodeB = await testHelper.generateTestNode({
         nodeManager,
         createdBy
-      );
+      });
       const ascNodes = await nodeManager.allNodes(
         null,
         "createdAt_ASC",
@@ -307,18 +328,14 @@ describe("NodeManager Module", () => {
     it("should order by updatedAt", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
-      const nodeA = await testHelper.generateTestNode(
-        db,
-        nodeManager,
+      const createdBy = await testHelper.createTestUser({});
+      const nodeA = await testHelper.generateTestNode({
         createdBy
-      );
+      });
       await new Promise(resolve => setTimeout(resolve, 2));
-      const nodeB = await testHelper.generateTestNode(
-        db,
-        nodeManager,
+      const nodeB = await testHelper.generateTestNode({
         createdBy
-      );
+      });
       const ascNodes = await nodeManager.allNodes(
         null,
         "updatedAt_ASC",
@@ -340,25 +357,50 @@ describe("NodeManager Module", () => {
       done();
     });
 
+    it("should filter with OR conditional", async done => {
+      const db = await testHelper.getDatabase();
+      const nodeManager = new NodeManager(db.collection("nodes"));
+      const createdBy = await testHelper.createTestUser({});
+      const nodeA = await testHelper.generateTestNode({
+        createdBy,
+        title: "dogs"
+      });
+      const nodeB = await testHelper.generateTestNode({
+        createdBy,
+        title: "cats"
+      });
+      const orNodes = await nodeManager.allNodes(
+        { OR: [{ title_contains: "cats" }, { title_contains: "dogs" }] },
+        null,
+        null,
+        null
+      );
+      expect(orNodes).toHaveLength(2);
+      expect(orNodes).toContainEqual(nodeA);
+      expect(orNodes).toContainEqual(nodeB);
+      const andNodes = await nodeManager.allNodes(
+        { createdAt_lt: new Date(), createdAt_gt: new Date() },
+        null,
+        null,
+        null
+      );
+      expect(andNodes).toHaveLength(0);
+      done();
+    });
+
     it("should handle skip and first", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser();
-      const nodeA = await testHelper.generateTestNode(
-        db,
-        nodeManager,
+      const createdBy = await testHelper.createTestUser({});
+      const nodeA = await testHelper.generateTestNode({
         createdBy
-      );
-      const nodeB = await testHelper.generateTestNode(
-        db,
-        nodeManager,
+      });
+      const nodeB = await testHelper.generateTestNode({
         createdBy
-      );
-      const nodeC = await testHelper.generateTestNode(
-        db,
-        nodeManager,
+      });
+      const nodeC = await testHelper.generateTestNode({
         createdBy
-      );
+      });
       const skipA = await nodeManager.allNodes(
         null,
         "createdAt_ASC",

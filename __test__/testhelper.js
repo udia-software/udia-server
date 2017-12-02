@@ -10,7 +10,7 @@ let _mongo = null;
  */
 async function initializeTestState(clearDatabase = true) {
   if (!_mongo) {
-    _mongo = await connectMongo();
+    _mongo = await connectMongo("_test");
   }
   if (clearDatabase) {
     await tearDownTestState();
@@ -44,26 +44,36 @@ async function getDatabase() {
   return await initializeTestState(false);
 }
 
-async function createTestUser() {
+async function createTestUser({
+  username = "Test_User",
+  rawPassword = "Secret123",
+  email = "test@test.com"
+}) {
   const UserManager = require("../src/modules/UserManager");
   const db = await getDatabase();
   const userManager = new UserManager(db.collection("users"));
-
-  const name = "Test User";
-  const rawPassword = "Secret123";
-  const email = "test@test.com";
-  return await userManager.createUser(name, email, rawPassword);
+  return await userManager.createUser(username, email, rawPassword);
 }
 
-async function generateTestNode(
-  db,
-  nodeManager,
+async function generateTestNode({
   createdBy,
   type = "TEXT",
   title = "Test Node",
   content = "Test Node Content"
-) {
+}) {
+  const NodeManager = require("../src/modules/NodeManager");
+  const db = await getDatabase();
+  const nodeManager = new NodeManager(db.collection("nodes"));
   return await nodeManager.createNode(createdBy, type, title, content);
+}
+
+async function generateTestVote({ user, node, type = "UP" }) {
+  const NodeManager = require("../src/modules/NodeManager");
+  const VoteManager = require("../src/modules/VoteManager");
+  const db = await getDatabase();
+  const nodeManager = new NodeManager(db.collection("nodes"));
+  const voteManager = new VoteManager(db.collection("votes"));
+  return await voteManager.createVote(user, type, node._id, nodeManager);
 }
 
 module.exports = {
@@ -71,5 +81,6 @@ module.exports = {
   tearDownTestState,
   getDatabase,
   createTestUser,
-  generateTestNode
+  generateTestNode,
+  generateTestVote
 };

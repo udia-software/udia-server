@@ -2,9 +2,10 @@
 const { authenticateUser } = require("../modules/Auth");
 const pubSub = require("../pubSub");
 
-const createVote = async (root, data, { Votes, user }) => {
-  const linkId = data.linkId;
-  const newVote = await Votes.createVote(linkId, user);
+const createVote = async (root, data, { Nodes, Votes, user }) => {
+  const nodeId = data.nodeId;
+  const type = data.type;
+  const newVote = await Votes.createVote(user, type, nodeId, Nodes);
   pubSub.publish("Vote", { Vote: { mutation: "CREATED", node: newVote } });
   return newVote;
 };
@@ -18,10 +19,10 @@ const createLink = async (root, data, { Links, user }) => {
 };
 
 const createUser = async (root, data, { Users }) => {
-  const name = data.name;
+  const username = data.username;
   const email = data.authProvider.email.email;
   const rawPassword = data.authProvider.email.password;
-  return await Users.createUser(name, email, rawPassword);
+  return await Users.createUser(username, email, rawPassword);
 };
 
 const createNode = async (root, data, { Nodes, user }) => {

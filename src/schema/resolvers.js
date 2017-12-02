@@ -25,8 +25,8 @@ module.exports = {
     user: async ({ userId }, data, { Users }) => {
       return await Users.getUserById(userId);
     },
-    node: async ({ linkId }, data, { Links }) => {
-      return await Links.getLinkById(linkId);
+    node: async ({ nodeId }, data, { Nodes }) => {
+      return await Nodes.getNodeById(nodeId);
     }
   },
   User: {

@@ -20,16 +20,25 @@ class UserManager {
   async _batchUsers(keys) {
     return await this.collection
       .find({ _id: { $in: keys.map(key => new ObjectID(key)) } })
-      .toArray();
+      .toArray()
+      .then(users => keys.map(id => users.find(u => u._id.equals(id)) || null));
   }
 
   /**
    * Create a user and store in the DB
-   * @param {string} name - Name of the user
+   * @param {string} username - Username of the user
    * @param {string} email - Email of the user
    * @param {string} rawPassword - Raw Password of the user
    */
-  async createUser(name, email, rawPassword) {
+  async createUser(username, email, rawPassword) {
+    // if username already exists, user already exists, throw an error
+    const existingUsername = await this.collection.find({ username }).toArray();
+    if (existingUsername.length) {
+      throw new ValidationError(
+        "Username is already in use by another user.",
+        "username"
+      );
+    }
     // if email already exists, user already exists, throw an error
     const existingEmail = await this.collection.find({ email }).toArray();
     if (existingEmail.length) {
@@ -39,11 +48,12 @@ class UserManager {
       );
     }
     const passwordHash = await hashPassword(rawPassword);
+    const now = new Date();
     const newUser = {
-      name,
+      username,
       email,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
       passwordHash
     };
     const response = await this.collection.insert(newUser);

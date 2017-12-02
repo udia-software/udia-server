@@ -70,8 +70,7 @@ const typeDefs = `
 
   type User @model {
     _id: ID! @isUnique
-    email: String @isUnique
-    name: String!
+    username: String! @isUnique
     votes: [Vote!]! @relation(name: "UserVotes")
     nodes: [Node!]! @relation(name: "UserNodes")
     links: [Link!]! @relation(name: "UserLinks")
@@ -92,7 +91,7 @@ const typeDefs = `
   type Mutation {
     createNode(type: NodeType!, title: String!, content: String!, inputLinkIds: [ID!]): Node!
     createVote(type: VoteType!, nodeId: ID!): Vote!
-    createUser(name: String!, authProvider: AuthProviderSignupData!): User!
+    createUser(username: String!, authProvider: AuthProviderSignupData!): User!
     signinUser(email: AUTH_PROVIDER_EMAIL): SigninPayload!
   }
 
