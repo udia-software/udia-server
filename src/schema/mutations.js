@@ -1,6 +1,6 @@
 "use strict";
 const { authenticateUser } = require("../modules/Auth");
-const pubSub = require("../pubSub");
+const pubSub = require("../pubsub");
 
 const createVote = async (root, data, { Nodes, Votes, user }) => {
   const nodeId = data.nodeId;

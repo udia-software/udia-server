@@ -1,7 +1,7 @@
 const { Kind } = require("graphql/language");
 const Query = require("./queries");
 const Mutation = require("./mutations");
-const pubSub = require("../pubSub");
+const pubSub = require("../pubsub");
 
 module.exports = {
   Query: Query,

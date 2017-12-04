@@ -44,7 +44,7 @@ const start = async () => {
   // developer route. this will change if you nuke the db
 
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
-  if (NODE_ENV !== "prod") {
+  if (NODE_ENV !== "production") {
     const jwt = TEST_JWT;
     app.use(
       "/graphiql",
