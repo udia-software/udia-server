@@ -95,6 +95,9 @@ describe("VoteManager Module", () => {
       const vote = await testHelper.generateTestVote({ user, node });
       const getVote = await voteManager.getVoteById(vote._id);
       expect(getVote).toEqual(vote);
+
+      const noVote = await voteManager.getVoteById();
+      expect(noVote).toEqual(null);
       done();
     });
   });

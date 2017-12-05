@@ -20,9 +20,10 @@ const createLink = async (root, data, { Links, user }) => {
 
 const createUser = async (root, data, { Users }) => {
   const username = data.username;
-  const email = data.authProvider.email.email;
-  const rawPassword = data.authProvider.email.password;
-  return await Users.createUser(username, email, rawPassword);
+  const email = data.email;
+  const password = data.password;
+  await Users.createUser(username, email, password);
+  return await authenticateUser(password, email, Users);
 };
 
 const createNode = async (root, data, { Nodes, user }) => {

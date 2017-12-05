@@ -28,9 +28,9 @@ class UserManager {
    * Create a user and store in the DB
    * @param {string} username - Username of the user
    * @param {string} email - Email of the user
-   * @param {string} rawPassword - Raw Password of the user
+   * @param {string} password - Raw Password of the user
    */
-  async createUser(username, email, rawPassword) {
+  async createUser(username, email, password) {
     // if username already exists, user already exists, throw an error
     const existingUsername = await this.collection.find({ username }).toArray();
     if (existingUsername.length) {
@@ -47,7 +47,33 @@ class UserManager {
         "email"
       );
     }
-    const passwordHash = await hashPassword(rawPassword);
+    if (!username.trim().length) {
+      throw new ValidationError(
+        "Username cannot be empty.",
+        "username"
+      );
+    }
+    if (!email.trim().length) {
+      throw new ValidationError(
+        "Email cannot be empty.",
+        "email"
+      );
+    }
+    // simple regex for email matching
+    const email_re = new RegExp("[A-Z0-9._%+-]+@[A-Z0-9.-]+.[A-Z]{2,}");
+    if (!email_re.exec(email.trim().toUpperCase())) {
+      throw new ValidationError(
+        "Email must be in the form quantifier@domain.tld.",
+        "email"
+      );
+    }
+    if (!password) {
+      throw new ValidationError(
+        "Password cannot be empty.",
+        "password"
+      );
+    }
+    const passwordHash = await hashPassword(password);
     const now = new Date();
     const newUser = {
       username,

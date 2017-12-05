@@ -52,6 +52,21 @@ describe("UserManager Module", () => {
       done();
     });
 
+    it("should error on creating user with empty username", async done => {
+      const username = "";
+      const rawPassword = "Secret234";
+      const email = "test@test.com";
+      const db = await testHelper.getDatabase();
+      const userManager = new UserManager(db.collection("users"));
+
+      await expect(
+        userManager.createUser(username, email, rawPassword)
+      ).rejects.toEqual(
+        new ValidationError("Username cannot be empty.")
+      );
+      done();
+    });
+
     it("should error on creating user with taken email", async done => {
       const username = "Email_Collision_User";
       const rawPassword = "Secret234";
@@ -64,6 +79,51 @@ describe("UserManager Module", () => {
         userManager.createUser(username + "1", email, rawPassword)
       ).rejects.toEqual(
         new ValidationError("Email is already in use by another user.")
+      );
+      done();
+    });
+
+    it("should error on creating user with empty email", async done => {
+      const username = "No_Email_User";
+      const rawPassword = "Secret234";
+      const email = "";
+      const db = await testHelper.getDatabase();
+      const userManager = new UserManager(db.collection("users"));
+
+      await expect(
+        userManager.createUser(username, email, rawPassword)
+      ).rejects.toEqual(
+        new ValidationError("Email cannot be empty.")
+      );
+      done();
+    });
+
+    it("should error on creating user with invalid email", async done => {
+      const username = "No_Email_User";
+      const rawPassword = "Secret234";
+      const email = "thisisnotanemail";
+      const db = await testHelper.getDatabase();
+      const userManager = new UserManager(db.collection("users"));
+
+      await expect(
+        userManager.createUser(username, email, rawPassword)
+      ).rejects.toEqual(
+        new ValidationError("Email must be in the form quantifier@domain.tld.")
+      );
+      done();
+    });
+
+    it("should error on creating user with no password", async done => {
+      const username = "No_Password_User";
+      const rawPassword = "";
+      const email = "test@test.com";
+      const db = await testHelper.getDatabase();
+      const userManager = new UserManager(db.collection("users"));
+
+      await expect(
+        userManager.createUser(username, email, rawPassword)
+      ).rejects.toEqual(
+        new ValidationError("Password cannot be empty.")
       );
       done();
     });

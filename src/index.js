@@ -2,6 +2,7 @@
 
 const express = require("express");
 const bodyParser = require("body-parser");
+const cors = require("cors");
 const { graphqlExpress, graphiqlExpress } = require("apollo-server-express");
 const { execute, subscribe, formatError } = require("graphql");
 const { createServer } = require("http");
@@ -41,8 +42,7 @@ const start = async () => {
     };
   };
 
-  // developer route. this will change if you nuke the db
-
+  app.use(cors());
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
   if (NODE_ENV !== "production") {
     const jwt = TEST_JWT;
