@@ -16,7 +16,7 @@ class VoteManager {
    * Function for dataloader to batch lookup votes
    * @param {Array<string>} keys - Arrays of vote ids to batch lookup
    */
-  async _batchVotes(keys = []) {
+  async _batchVotes(keys) {
     return await this.collection
       .find({ _id: { $in: keys.map(key => new ObjectID(key)) } })
       .toArray()
@@ -30,22 +30,54 @@ class VoteManager {
    * @param {String} nodeId - String, passed as arg to Mongo ObjectID()
    * @param {NodeManager} nodeManager - Used to determine if node exists
    */
-  async createVote(user, type = "", nodeId = "", nodeManager) {
+  async createVote(user, type, nodeId, nodeManager) {
+    const errors = [];
+
     const userId = user && user._id;
+
+    // Auth Validation
+    // * Check if the user is authenticated
     if (!userId) {
-      throw new ValidationError("User must be authenticated.", "user");
+      errors.push({
+        key: "user",
+        message: "User must be authenticated.",
+      });
     }
+
+    // Type Validation
+    // * Check if type in ENUM defs
     if (["UP", "DOWN"].indexOf(type) < 0) {
-      throw new ValidationError("Type must be UP or DOWN.", "type");
+      errors.push({
+        key: "type",
+        message: "Type must be UP or DOWN."
+      });
     }
+
+    // Node Validation
+    // * Check if node to vote on exists
     const node = await nodeManager.getNodeById(nodeId);
     if (!node) {
-      throw new ValidationError("Node must exist.", "nodeId");
+      errors.push({
+        key: "nodeId",
+        message: "Node must exist."
+      });
+    } else {
+      // Vote Validation
+      // * Check if user has already voted
+      const voted = await this._getVoteByUserIdAndNodeId(userId, node._id);
+      if (voted.length > 0) {
+        errors.push({
+          message: "User already voted.",
+          key: "user"
+        });
+      }
     }
-    const voted = await this._getVoteByUserIdAndNodeId(userId, node._id);
-    if (voted.length > 0) {
-      throw new ValidationError("User already voted.", "user");
+    
+
+    if (errors.length) {
+      throw new ValidationError(errors);
     }
+    
     const newVote = {
       type,
       userId,
@@ -67,13 +99,13 @@ class VoteManager {
     return await this.voteLoader.load(id || new ObjectID());
   }
 
-  async getVotesByNodeId(nodeId) {
-    return await this.collection.find({ nodeId }).toArray();
-  }
+  // async getVotesByNodeId(nodeId) {
+  //   return await this.collection.find({ nodeId }).toArray();
+  // }
 
-  async getVotesByUserId(userId) {
-    return await this.collection.find({ userId }).toArray();
-  }
+  // async getVotesByUserId(userId) {
+  //   return await this.collection.find({ userId }).toArray();
+  // }
 }
 
 module.exports = VoteManager;

@@ -59,7 +59,14 @@ describe("NodeManager Module", () => {
 
       await expect(
         nodeManager.createNode(null, type, title, content)
-      ).rejects.toEqual(new ValidationError("User must be authenticated."));
+      ).rejects.toEqual(
+        new ValidationError([
+          {
+            key: "createdBy",
+            message: "User must be authenticated."
+          }
+        ])
+      );
       done();
     });
 
@@ -72,7 +79,14 @@ describe("NodeManager Module", () => {
 
       await expect(
         nodeManager.createNode(createdBy, null, title, content)
-      ).rejects.toEqual(new ValidationError("Type must be TEXT or URL."));
+      ).rejects.toEqual(
+        new ValidationError([
+          {
+            key: "type",
+            message: "Type must be TEXT or URL."
+          }
+        ])
+      );
       done();
     });
 
@@ -85,7 +99,14 @@ describe("NodeManager Module", () => {
 
       await expect(
         nodeManager.createNode(createdBy, type, null, content)
-      ).rejects.toEqual(new ValidationError("Title must not be empty."));
+      ).rejects.toEqual(
+        new ValidationError([
+          {
+            key: "title",
+            message: "Title must not be empty."
+          }
+        ])
+      );
       done();
     });
 
@@ -98,7 +119,14 @@ describe("NodeManager Module", () => {
 
       await expect(
         nodeManager.createNode(createdBy, type, title, null)
-      ).rejects.toEqual(new ValidationError("Content must not be empty."));
+      ).rejects.toEqual(
+        new ValidationError([
+          {
+            key: "content",
+            message: "Content must not be empty."
+          }
+        ])
+      );
       done();
     });
 
@@ -112,7 +140,14 @@ describe("NodeManager Module", () => {
 
       await expect(
         nodeManager.createNode(createdBy, type, title, content)
-      ).rejects.toEqual(new ValidationError("Content must be a valid url."));
+      ).rejects.toEqual(
+        new ValidationError([
+          {
+            key: "content",
+            message: "Content must be a valid url."
+          }
+        ])
+      );
       done();
     });
   });

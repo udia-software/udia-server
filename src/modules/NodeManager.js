@@ -17,7 +17,7 @@ class NodeManager {
    * Function for dataloader to batch lookup nodes
    * @param {Array<string>} keys - Arrays of node ids to batch lookup
    */
-  async _batchNodes(keys = []) {
+  async _batchNodes(keys) {
     return await this.collection
       .find({ _id: { $in: keys.map(key => new ObjectID(key)) } })
       .toArray()
@@ -105,27 +105,63 @@ class NodeManager {
    * @param {String} title - String, title of node
    * @param {String} content - String, content of node
    */
-  async createNode(createdBy, type = "", title = "", content = "") {
+  async createNode(createdBy, type, title, content) {
+    const errors = [];
+
+    // Auth Validation
+    // * Check if the user is authenticated
     const createdById = createdBy && createdBy._id;
     if (!createdById) {
-      throw new ValidationError("User must be authenticated.", "createdBy");
+      errors.push({
+        key: "createdBy",
+        message: "User must be authenticated."
+      });
     }
+
+    // Type Validation
+    // * Check if type in ENUM defs
     if (["TEXT", "URL"].indexOf(type) < 0) {
-      throw new ValidationError("Type must be TEXT or URL.", "type");
+      errors.push({
+        key: "type",
+        message: "Type must be TEXT or URL."
+      });
     }
+
+    // Title Validation
+    // * Check if title is empty
     if (!title || !title.trim()) {
-      throw new ValidationError("Title must not be empty.", "title");
+      errors.push({
+        key: "title",
+        message: "Title must not be empty."
+      });
     }
+
+    // Content Validation
+    // * Check if content is empty
     if (!content || !content.trim()) {
-      throw new ValidationError("Content must not be empty.", "content");
+      errors.push({
+        key: "content",
+        message: "Content must not be empty."
+      });
     }
+
+    // URL Validation
+    // * Check ONLY WHEN type is URL that content is a valid URL
     if (type === "URL") {
       try {
         new URL(content);
       } catch (_) {
-        throw new ValidationError("Content must be a valid url.", "content");
+        errors.push({
+          key: "content",
+          message: "Content must be a valid url."
+        });
       }
     }
+
+    if (errors.length) {
+      throw new ValidationError(errors);
+    }
+
     const now = new Date();
     const newNode = {
       type,
@@ -143,7 +179,7 @@ class NodeManager {
    * Get a node from the db by ID
    * @param {string} id - string representation of mongo object ID
    */
-  async getNodeById(id = "") {
+  async getNodeById(id) {
     return await this.nodeLoader.load(id || new ObjectID());
   }
 
@@ -154,7 +190,7 @@ class NodeManager {
    * @param {Number|null} skip - integer, number of objects to skip
    * @param {Number|null} first - integer, number of objects to return after skip
    */
-  async allNodes(filter, orderBy, skip = 0, first = 0) {
+  async allNodes(filter, orderBy, skip, first) {
     let query = filter ? { $or: NodeManager._buildFilters(filter) } : {};
     const cursor = this.collection.find(query);
     if (skip) {

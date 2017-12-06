@@ -24,7 +24,7 @@ describe("Auth Module", () => {
   });
 
   it("should authenticate a valid user", async done => {
-    const name = "Test User";
+    const name = "Test_User";
     const rawPassword = "Secret123";
     const email = "test@test.com";
     const db = await testHelper.getDatabase();
@@ -50,7 +50,7 @@ describe("Auth Module", () => {
   });
 
   it("should not authenticate a password mismatch", async done => {
-    const name = "Test User";
+    const name = "Test_User";
     const rawPassword = "Secret123";
     const email = "test@test.com";
     const db = await testHelper.getDatabase();
@@ -59,12 +59,17 @@ describe("Auth Module", () => {
     await userManager.createUser(name, email, rawPassword);
     await expect(
       Auth.authenticateUser("mismatch", email, userManager)
-    ).rejects.toEqual(new ValidationError("Invalid password."));
+    ).rejects.toEqual(new ValidationError([
+      {
+        key: "rawPassword",
+        message: "Invalid password."
+      }
+    ]));
     done();
   });
 
   it("should not authenticate when email not found", async done => {
-    const name = "Test User";
+    const name = "Test_User";
     const rawPassword = "Secret123";
     const email = "test@test.com";
     const db = await testHelper.getDatabase();
@@ -73,7 +78,12 @@ describe("Auth Module", () => {
     await userManager.createUser(name, email, rawPassword);
     await expect(
       Auth.authenticateUser(rawPassword, "not@me.com", userManager)
-    ).rejects.toEqual(new ValidationError("User not found for given email."));
+    ).rejects.toEqual(new ValidationError([
+      {
+        key: "email",
+        message: "User not found for given email."
+      }
+    ]));
     done();
   });
 

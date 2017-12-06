@@ -45,7 +45,14 @@ describe("VoteManager Module", () => {
       const node = await testHelper.generateTestNode({ createdBy: user });
       await expect(
         voteManager.createVote(null, "UP", node._id, nodeManager)
-      ).rejects.toEqual(new ValidationError("User must be authenticated."));
+      ).rejects.toEqual(
+        new ValidationError([
+          {
+            key: "user",
+            message: "User must be authenticated."
+          }
+        ])
+      );
       done();
     });
 
@@ -57,7 +64,14 @@ describe("VoteManager Module", () => {
       const node = await testHelper.generateTestNode({ createdBy: user });
       await expect(
         voteManager.createVote(user, null, node._id, nodeManager)
-      ).rejects.toEqual(new ValidationError("Type must be UP or DOWN."));
+      ).rejects.toEqual(
+        new ValidationError([
+          {
+            key: "type",
+            message: "Type must be UP or DOWN."
+          }
+        ])
+      );
       done();
     });
 
@@ -68,7 +82,14 @@ describe("VoteManager Module", () => {
       const user = await testHelper.createTestUser({});
       await expect(
         voteManager.createVote(user, "UP", null, nodeManager)
-      ).rejects.toEqual(new ValidationError("Node must exist."));
+      ).rejects.toEqual(
+        new ValidationError([
+          {
+            key: "node",
+            message: "Node must exist."
+          }
+        ])
+      );
       done();
     });
 
@@ -81,7 +102,14 @@ describe("VoteManager Module", () => {
       await voteManager.createVote(user, "UP", node._id, nodeManager);
       await expect(
         voteManager.createVote(user, "UP", node._id, nodeManager)
-      ).rejects.toEqual(new ValidationError("User already voted."));
+      ).rejects.toEqual(
+        new ValidationError([
+          {
+            key: "user",
+            message: "User already voted."
+          }
+        ])
+      );
       done();
     });
   });

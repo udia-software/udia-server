@@ -37,7 +37,7 @@ describe("UserManager Module", () => {
     });
 
     it("should error on creating user with taken username", async done => {
-      const username = "Username_Collision_User";
+      const username = "UN_Collision";
       const rawPassword = "Secret234";
       const email = "test@test.com";
       const db = await testHelper.getDatabase();
@@ -47,7 +47,12 @@ describe("UserManager Module", () => {
       await expect(
         userManager.createUser(username, email + "1", rawPassword)
       ).rejects.toEqual(
-        new ValidationError("Username is already in use by another user.")
+        new ValidationError([
+          {
+            key: "username",
+            message: "Username is already in use by another user."
+          }
+        ])
       );
       done();
     });
@@ -62,13 +67,41 @@ describe("UserManager Module", () => {
       await expect(
         userManager.createUser(username, email, rawPassword)
       ).rejects.toEqual(
-        new ValidationError("Username cannot be empty.")
+        new ValidationError([
+          {
+            key: "username",
+            message: "Username cannot be empty."
+          }
+        ])
+      );
+      done();
+    });
+
+    it("should error on creating user with invalid username", async done => {
+      const username = "Xx-invalid-xX1234567890";
+      const rawPassword = "Secret234";
+      const email = "test@test.com";
+      const db = await testHelper.getDatabase();
+      const userManager = new UserManager(db.collection("users"));
+
+      await expect(
+        userManager.createUser(username, email, rawPassword)
+      ).rejects.toEqual(
+        new ValidationError([
+          {
+            key: "username",
+            message: [
+              "Username must be alphanumeric with underscores.",
+              "Username cannot be over 15 characters long."
+            ]
+          }
+        ])
       );
       done();
     });
 
     it("should error on creating user with taken email", async done => {
-      const username = "Email_Collision_User";
+      const username = "Email_Col";
       const rawPassword = "Secret234";
       const email = "test@test.com";
       const db = await testHelper.getDatabase();
@@ -78,7 +111,12 @@ describe("UserManager Module", () => {
       await expect(
         userManager.createUser(username + "1", email, rawPassword)
       ).rejects.toEqual(
-        new ValidationError("Email is already in use by another user.")
+        new ValidationError([
+          {
+            key: "email",
+            message: "Email is already in use by another user."
+          }
+        ])
       );
       done();
     });
@@ -93,7 +131,12 @@ describe("UserManager Module", () => {
       await expect(
         userManager.createUser(username, email, rawPassword)
       ).rejects.toEqual(
-        new ValidationError("Email cannot be empty.")
+        new ValidationError([
+          {
+            key: "email",
+            message: "Email cannot be empty."
+          }
+        ])
       );
       done();
     });
@@ -108,7 +151,12 @@ describe("UserManager Module", () => {
       await expect(
         userManager.createUser(username, email, rawPassword)
       ).rejects.toEqual(
-        new ValidationError("Email must be in the form quantifier@domain.tld.")
+        new ValidationError([
+          {
+            key: "email",
+            message: "Email must be in the form quantifier@domain.tld."
+          }
+        ])
       );
       done();
     });
@@ -123,7 +171,12 @@ describe("UserManager Module", () => {
       await expect(
         userManager.createUser(username, email, rawPassword)
       ).rejects.toEqual(
-        new ValidationError("Password cannot be empty.")
+        new ValidationError([
+          {
+            key: "password",
+            message: "Password cannot be empty."
+          }
+        ])
       );
       done();
     });

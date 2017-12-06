@@ -38,7 +38,10 @@ async function verifyUserJWT({ headers: { authorization } }, Users) {
 async function authenticateUser(rawPassword, email, Users) {
   const user = await Users.getUserByEmail(email);
   if (!user) {
-    throw new ValidationError("User not found for given email.", "email");
+    throw new ValidationError([{
+      key: "email",
+      message: "User not found for given email.",
+    }]);
   }
   const passwordsMatch = await bcrypt.compare(rawPassword, user.passwordHash);
   if (passwordsMatch) {
@@ -48,7 +51,10 @@ async function authenticateUser(rawPassword, email, Users) {
     });
     return { token, user };
   }
-  throw new ValidationError("Invalid password.", "rawPassword");
+  throw new ValidationError([{
+    message: "Invalid password.",
+    key: "rawPassword"
+  }]);
 }
 
 module.exports = {

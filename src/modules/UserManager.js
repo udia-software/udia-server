@@ -31,48 +31,74 @@ class UserManager {
    * @param {string} password - Raw Password of the user
    */
   async createUser(username, email, password) {
-    // if username already exists, user already exists, throw an error
-    const existingUsername = await this.collection.find({ username }).toArray();
+    const errors = [];
+
+    // Username Validation
+    // * Username not already taken
+    // * Username is not empty
+    // * Check username is alpha numeric with underscores
+    // * Check username length is under 16 chars
+    const existingUsername = await this.collection.find({ username: { $regex: new RegExp(`^${username}$`, "i")} }).toArray();
+    const alphaNumDashUnderscore_re = new RegExp("^[a-zA-Z0-9_]+$");
     if (existingUsername.length) {
-      throw new ValidationError(
-        "Username is already in use by another user.",
-        "username"
-      );
+      errors.push({
+        key: "username",
+        message: "Username is already in use by another user."
+      });
+    } else if (!username.trim().length) {
+      errors.push({
+        key: "username",
+        message: "Username cannot be empty."
+      });
+    } else if (!alphaNumDashUnderscore_re.exec(username.trim())) {
+      errors.push({
+        key: "username",
+        message: "Username must be alphanumeric with underscores."
+      });
     }
-    // if email already exists, user already exists, throw an error
-    const existingEmail = await this.collection.find({ email }).toArray();
-    if (existingEmail.length) {
-      throw new ValidationError(
-        "Email is already in use by another user.",
-        "email"
-      );
+    if (username.trim().length >= 16) {
+      errors.push({
+        key: "username",
+        message: "Username cannot be over 15 characters long."
+      });
     }
-    if (!username.trim().length) {
-      throw new ValidationError(
-        "Username cannot be empty.",
-        "username"
-      );
-    }
-    if (!email.trim().length) {
-      throw new ValidationError(
-        "Email cannot be empty.",
-        "email"
-      );
-    }
-    // simple regex for email matching
+
+    // Email Validation
+    // * Email not already taken
+    // * Email is not empty
+    // * Email matches regular expression for 99% of all emails
+    const existingEmail = await this.collection.find({ email: { $regex: new RegExp(`^${email}$`, "i") } }).toArray();
     const email_re = new RegExp("[A-Z0-9._%+-]+@[A-Z0-9.-]+.[A-Z]{2,}");
-    if (!email_re.exec(email.trim().toUpperCase())) {
-      throw new ValidationError(
-        "Email must be in the form quantifier@domain.tld.",
-        "email"
-      );
+    if (existingEmail.length) {
+      errors.push({
+        key: "email",
+        message: "Email is already in use by another user."
+      });
+    } else if (!email.trim().length) {
+      errors.push({
+        key: "email",
+        message: "Email cannot be empty."
+      });
+    } else if (!email_re.exec(email.trim().toUpperCase())) {
+      errors.push({
+        key: "email",
+        message: "Email must be in the form quantifier@domain.tld."
+      });
     }
+
+    // Password Validation
+    // * Password is not empty
     if (!password) {
-      throw new ValidationError(
-        "Password cannot be empty.",
-        "password"
-      );
+      errors.push({
+        key: "password",
+        message: "Password cannot be empty."
+      });
     }
+    
+    if (errors.length) {
+      throw new ValidationError(errors);
+    }
+
     const passwordHash = await hashPassword(password);
     const now = new Date();
     const newUser = {
