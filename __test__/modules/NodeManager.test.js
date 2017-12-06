@@ -164,6 +164,8 @@ describe("NodeManager Module", () => {
       expect(node).toEqual(getNode);
       const noNode = await nodeManager.getNodeById(new ObjectId());
       expect(noNode).toEqual(null);
+      const nullNode = await nodeManager.getNodeById(null);
+      expect(nullNode).toEqual(null);
       done();
     });
 

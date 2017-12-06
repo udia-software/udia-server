@@ -57,14 +57,33 @@ const start = async () => {
   }
 
   const server = createServer(app);
+  let subscriptionServer = null;
   server.listen(PORT, () => {
-    SubscriptionServer.create(
+    subscriptionServer = SubscriptionServer.create(
       { execute, subscribe, schema },
       { server, path: "/subscriptions" }
     );
-    // eslint-disable-next-line no-console
-    console.log(`UDIA GraphQL server running on port ${PORT}.`);
+    if (NODE_ENV !== "test") {
+      // eslint-disable-next-line no-console
+      console.log(`UDIA GraphQL server running on port ${PORT}.`);      
+    }
   });
+
+  server.on("close", async () => {
+    // subscriptionServer can be null if close called immediately after server start
+    if (subscriptionServer) {
+      await subscriptionServer.close();      
+    }
+    if (db) {
+      await db.close();
+    }
+  });
+
+  return server;
 };
 
-start();
+if (require.main === module) {
+  start();
+}
+
+module.exports = start;

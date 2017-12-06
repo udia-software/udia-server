@@ -3,6 +3,8 @@ const resolvers = require("./resolvers");
 
 // Define types here
 const typeDefs = `
+  ${""/* Nodes */}
+
   type Node @model {
     _id: ID! @isUnique
     type: NodeType!
@@ -43,6 +45,8 @@ const typeDefs = `
     updatedAt_DESC
   }
 
+  ${""/* Links */}
+
   type Link @model {
     _id: ID! @isUnique
     type: LinkType!
@@ -56,6 +60,14 @@ const typeDefs = `
     POST
   }
 
+  input LinkFilter {
+    OR: [LinkFilter!]
+    id: ID
+    sourceNodeId: ID
+  }
+
+  ${""/* Votes */}
+
   type Vote @model {
     _id: ID! @isUnique
     type: VoteType!
@@ -68,6 +80,8 @@ const typeDefs = `
     DOWN
   }
 
+  ${""/* Users */}
+ 
   type User @model {
     _id: ID! @isUnique
     username: String! @isUnique
@@ -79,18 +93,19 @@ const typeDefs = `
     passwordHash: String
   }
 
+  ${""/* Queries */}  
+
   type Query {
-    allNodes(
-      filter: NodeFilter,
-      orderBy: NodeOrderBy,
-      skip: Int,
-      first: Int
-    ): [Node!]!
+    allNodes(filter: NodeFilter, orderBy: NodeOrderBy, skip: Int, first: Int): [Node!]!
+    allLinks(filter: LinkFilter, skip: Int, first: Int): [Link!]!
   }
+
+  ${""/* Mutations */}  
 
   type Mutation {
     createNode(type: NodeType!, title: String!, content: String!, inputLinkIds: [ID!]): Node!
     createVote(type: VoteType!, nodeId: ID!): Vote!
+    createLink(type: LinkType!, sourceNodeId: ID!, destNodeId: ID!): Link!
     createUser(email: String! username: String!, password: String!): SigninPayload!
     signinUser(email: AUTH_PROVIDER_EMAIL): SigninPayload!
   }
@@ -108,6 +123,8 @@ const typeDefs = `
     email: String!
     password: String!
   }
+
+  ${""/* Subscriptions */}
 
   type Subscription {
     Node(filter: NodeSubscriptionFilter): NodeSubscriptionPayload
