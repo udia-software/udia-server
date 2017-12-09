@@ -35,7 +35,7 @@ const start = async () => {
       formatError: error => {
         return {
           ...formatError(error),
-          field: error.originalError && error.originalError.field
+          state: error.originalError && error.originalError.state,
         };
       },
       schema
