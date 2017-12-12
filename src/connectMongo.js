@@ -1,14 +1,20 @@
 "use strict";
 
 const { MongoClient } = require("mongodb");
-const { MONGO_URI } = require("./constants");
+const { MONGODB_URI } = require("./constants");
 
 /**
  * Connect to the mongo daemon and return the database client instance.
  */
 const connectMongo = async (suffix) => {
-  const db = await MongoClient.connect(MONGO_URI + suffix);
-
+  try {
+    const db = await MongoClient.connect(MONGODB_URI + suffix);
+    return db;
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error(err);
+    process.exit(1);
+  }
   // Development Performance Logging
   // const { Logger } = require("mongodb");
   // const { NODE_ENV } = require("./constants");
@@ -21,8 +27,6 @@ const connectMongo = async (suffix) => {
   //   Logger.setLevel("debug");
   //   Logger.filter("class", ["Cursor"]);
   // }
-
-  return db;
 };
 
 module.exports = connectMongo;
