@@ -10,7 +10,11 @@ let _mongo = null;
  */
 async function initializeTestState(clearDatabase = true) {
   if (!_mongo) {
-    _mongo = await connectMongo("_test");
+    _mongo = await connectMongo("_test").catch(err => {
+      // eslint-disable-next-line no-console
+      console.error(err);
+      process.exit(1);
+    });
   }
   if (clearDatabase) {
     await tearDownTestState();
