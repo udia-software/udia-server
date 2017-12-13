@@ -6,7 +6,7 @@ const { MONGODB_URI } = require("./constants");
 /**
  * Connect to the mongo daemon and return the database client instance.
  */
-const connectMongo = async (suffix) => {
+const connectMongo = async (suffix="") => {
   return await MongoClient.connect(MONGODB_URI + suffix);
   // Development Performance Logging
   // const { Logger } = require("mongodb");
