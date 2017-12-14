@@ -90,7 +90,18 @@ const typeDefs = `
     links: [Link!]! @relation(name: "UserLinks")
     createdAt: DateTime!
     updatedAt: DateTime!
-    passwordHash: String
+  }
+
+  type FullUser @model {
+    _id: ID! @isUnique
+    username: String! @isUnique
+    votes: [Vote!]! @relation(name: "UserVotes")
+    nodes: [Node!]! @relation(name: "UserNodes")
+    links: [Link!]! @relation(name: "UserLinks")
+    createdAt: DateTime!
+    updatedAt: DateTime!
+    email: String! @isUnique
+    passwordHash: String!
   }
 
   ${""/* Queries */}  
@@ -98,6 +109,7 @@ const typeDefs = `
   type Query {
     allNodes(filter: NodeFilter, orderBy: NodeOrderBy, skip: Int, first: Int): [Node!]!
     allLinks(filter: LinkFilter, skip: Int, first: Int): [Link!]!
+    me: FullUser
   }
 
   ${""/* Mutations */}  
