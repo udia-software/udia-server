@@ -114,24 +114,6 @@ describe("LinkManager Module", () => {
   });
 
   describe("Query", () => {
-    it("should dataloader get a link by id", async done => {
-      const db = await testHelper.getDatabase();
-      const linkManager = new LinkManager(db.collection("links"));
-      const nodeManager = new NodeManager(db.collection("nodes"));
-      const user = await testHelper.createTestUser({});
-      const sourceNode = await testHelper.generateTestNode({createdBy: user});
-      const destNode = await testHelper.generateTestNode({createdBy: user});
-      const link = await linkManager.createLink(user, "COMMENT", sourceNode._id, destNode._id, nodeManager);
-
-      const getLink = await linkManager.getLinkById(link._id);
-      expect(link).toEqual(getLink);
-      const noLink = await linkManager.getLinkById(new ObjectId());
-      expect(noLink).toEqual(null);
-      const nullLink = await linkManager.getLinkById(null);
-      expect(nullLink).toEqual(null);
-      done();
-    });
-
     it("should filter sanely given defaults", async done => {
       const db = await testHelper.getDatabase();
       const linkManager = new LinkManager(db.collection("links"));

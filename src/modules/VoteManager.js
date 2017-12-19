@@ -24,6 +24,29 @@ class VoteManager {
   }
 
   /**
+   * Recursively build the filter tree. Outputs a mongodb compatible query
+   * @param {VoteFilter} inputFilter - VoteFilter object (refer to schema)
+   */
+  static _buildFilters(inputFilter) {
+    const outputFilter = {};
+    if (inputFilter.id) {
+      outputFilter._id = inputFilter.id;
+    }
+    if (inputFilter.nodeId) {
+      outputFilter.nodeId = inputFilter.nodeId;
+    }
+    if (inputFilter.userId) {
+      outputFilter.userId = inputFilter.userId;
+    }
+
+    let filters = Object.keys(outputFilter).length ? [outputFilter] : [];
+    for (let i = 0; i < (inputFilter.OR || []).length; i++) {
+      filters = filters.concat(VoteManager._buildFilters(inputFilter.OR[i]));
+    }
+    return filters;
+  }
+
+  /**
    * Function for creating a vote
    * @param {*} user - Mongo Document, user who created the vote. Should have _id prop
    * @param {String} type - Type of vote ["UP", "DOWN"]
@@ -40,7 +63,7 @@ class VoteManager {
     if (!userId) {
       errors.push({
         key: "user",
-        message: "User must be authenticated.",
+        message: "User must be authenticated."
       });
     }
 
@@ -55,8 +78,8 @@ class VoteManager {
 
     // Node Validation
     // * Check if node to vote on exists
-    const node = await nodeManager.getNodeById(nodeId);
-    if (!node) {
+    const nodes = await nodeManager.allNodes({id: nodeId});
+    if (!nodes || !nodes.length > 0) {
       errors.push({
         key: "nodeId",
         message: "Node must exist."
@@ -64,7 +87,7 @@ class VoteManager {
     } else {
       // Vote Validation
       // * Check if user has already voted
-      const voted = await this._getVoteByUserIdAndNodeId(userId, node._id);
+      const voted = await this.allVotes({ userId, nodeId: nodes[0]._id });
       if (voted.length > 0) {
         errors.push({
           message: "User already voted.",
@@ -72,40 +95,37 @@ class VoteManager {
         });
       }
     }
-    
 
     if (errors.length) {
       throw new ValidationError(errors);
     }
-    
+
     const newVote = {
       type,
       userId,
-      nodeId: node._id
+      nodeId: nodes[0]._id
     };
     const response = await this.collection.insert(newVote);
     return Object.assign({ _id: response.insertedIds[0] }, newVote);
   }
 
-  async _getVoteByUserIdAndNodeId(userId, nodeId) {
-    return await this.collection.find({ userId, nodeId }).toArray();
-  }
-
   /**
-   * Get a vote from the db by ID
-   * @param {string} id - string representation of mongo object ID
+   * Function for getting all votes by query parameters.
+   * @param {VoteFilter|undefined} filter - Vote Filter object tree
+   * @param {Number|undefined} skip - integer, number of objects to skip
+   * @param {Number|undefined} first - integer, number of objects to return after skip
    */
-  async getVoteById(id = "") {
-    return await this.voteLoader.load(id || new ObjectID());
+  async allVotes(filter, skip, first) {
+    let query = filter ? { $or: VoteManager._buildFilters(filter) } : {};
+    const cursor = this.collection.find(query);
+    if (skip) {
+      cursor.skip(skip);
+    }
+    if (first) {
+      cursor.limit(first);
+    }
+    return await cursor.toArray();
   }
-
-  // async getVotesByNodeId(nodeId) {
-  //   return await this.collection.find({ nodeId }).toArray();
-  // }
-
-  // async getVotesByUserId(userId) {
-  //   return await this.collection.find({ userId }).toArray();
-  // }
 }
 
 module.exports = VoteManager;

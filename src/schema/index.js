@@ -80,6 +80,13 @@ const typeDefs = `
     DOWN
   }
 
+  input VoteFilter {
+    OR: [VoteFilter!]
+    id: ID
+    nodeId: ID
+    userId: ID
+  }
+
   ${""/* Users */}
  
   type User @model {
@@ -109,6 +116,7 @@ const typeDefs = `
   type Query {
     allNodes(filter: NodeFilter, orderBy: NodeOrderBy, skip: Int, first: Int): [Node!]!
     allLinks(filter: LinkFilter, skip: Int, first: Int): [Link!]!
+    allVotes(filter: VoteFilter, skip: Int, first: Int): [Vote!]!
     me: FullUser
   }
 
@@ -124,7 +132,7 @@ const typeDefs = `
 
   type SigninPayload {
     token: String!
-    user: User!
+    user: FullUser!
   }
 
   input AuthProviderSignupData {
@@ -141,6 +149,7 @@ const typeDefs = `
   type Subscription {
     Node(filter: NodeSubscriptionFilter): NodeSubscriptionPayload
     Link(filter: LinkSubscriptionFilter): LinkSubscriptionPayload
+    Vote(filter: VoteSubscriptionFilter): VoteSubscriptionPayload
   }
   
   input NodeSubscriptionFilter {
@@ -161,6 +170,15 @@ const typeDefs = `
     payload: Link!
   }
   
+  input VoteSubscriptionFilter {
+    mutation_in: [ModelMutationType!]
+  }
+
+  type VoteSubscriptionPayload {
+    mutation: ModelMutationType!
+    payload: Vote!
+  }
+
   enum ModelMutationType {
     CREATED
     UPDATED

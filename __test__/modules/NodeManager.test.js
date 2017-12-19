@@ -153,22 +153,6 @@ describe("NodeManager Module", () => {
   });
 
   describe("Query", () => {
-    it("should dataloader get a node by id", async done => {
-      const db = await testHelper.getDatabase();
-      const nodeManager = new NodeManager(db.collection("nodes"));
-      const createdBy = await testHelper.createTestUser({});
-      const node = await testHelper.generateTestNode({
-        createdBy
-      });
-      const getNode = await nodeManager.getNodeById(node._id);
-      expect(node).toEqual(getNode);
-      const noNode = await nodeManager.getNodeById(new ObjectId());
-      expect(noNode).toEqual(null);
-      const nullNode = await nodeManager.getNodeById(null);
-      expect(nullNode).toEqual(null);
-      done();
-    });
-
     it("should filter sanely given defaults", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));

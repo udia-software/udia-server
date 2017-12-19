@@ -15,9 +15,9 @@ class LinkManager {
 
   async _batchLinks(keys) {
     return await this.collection
-      .find({_id: {$in: keys.map(key => new ObjectID(key)) } })
+      .find({ _id: { $in: keys.map(key => new ObjectID(key)) } })
       .toArray()
-      .then(links => keys.map(id => links.find(l => l._id.equals(id)) || null ));
+      .then(links => keys.map(id => links.find(l => l._id.equals(id)) || null));
   }
 
   /**
@@ -72,20 +72,24 @@ class LinkManager {
     // Node Validation
     // * Check if source and dest nodes exist
     // * Check that dest node user matches link user
-    const sourceNode = await Nodes.getNodeById(sourceNodeId);
-    if (!sourceNode) {
+    const sourceNodes = await Nodes.allNodes({ id: sourceNodeId });
+    if (!sourceNodes || !sourceNodes.length > 0) {
       errors.push({
         key: "sourceNodeId",
         message: "Node must exist."
       });
     }
-    const destNode = await Nodes.getNodeById(destNodeId);
-    if (!destNode) {
+    const destNodes = await Nodes.allNodes({ id: destNodeId });
+    if (!destNodes || !destNodes.length) {
       errors.push({
         key: "destNodeId",
         message: "Node must exist."
       });
-    } else if (!destNode.createdById.equals(createdById)) {
+    } else if (
+      destNodes &&
+      destNodes.length &&
+      !destNodes[0].createdById.equals(createdById)
+    ) {
       errors.push({
         key: "destNodeId",
         message: "Destination node must belong to user."
@@ -111,10 +115,6 @@ class LinkManager {
       cursor.skip(skip);
     }
     return await cursor.toArray();
-  }
-
-  async getLinkById(id) {
-    return await this.linkLoader.load(id || new ObjectID());
   }
 }
 

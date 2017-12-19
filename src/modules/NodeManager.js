@@ -30,7 +30,7 @@ class NodeManager {
    */
   static _buildFilters(inputFilter) {
     const outputFilter = {};
-    if (inputFilter.id) {
+    if (inputFilter.id !== undefined) {
       outputFilter._id = inputFilter.id;
     }
     if (inputFilter.title_contains) {
@@ -173,14 +173,6 @@ class NodeManager {
     };
     const response = await this.collection.insert(newNode);
     return Object.assign({ _id: response.insertedIds[0] }, newNode);
-  }
-
-  /**
-   * Get a node from the db by ID
-   * @param {string} id - string representation of mongo object ID
-   */
-  async getNodeById(id) {
-    return await this.nodeLoader.load(id || new ObjectID());
   }
 
   /**
