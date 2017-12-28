@@ -62,23 +62,23 @@ async function createTestUser({
 
 async function generateTestNode({
   createdBy,
-  type = "TEXT",
+  dataType = "TEXT",
+  relationType = "POST",
   title = "Test Node",
-  content = "Test Node Content"
+  content = "Test Node Content",
+  parentId = null
 }) {
   const NodeManager = require("../src/modules/NodeManager");
   const db = await getDatabase();
   const nodeManager = new NodeManager(db.collection("nodes"));
-  return await nodeManager.createNode(createdBy, type, title, content);
-}
-
-async function generateTestVote({ user, node, type = "UP" }) {
-  const NodeManager = require("../src/modules/NodeManager");
-  const VoteManager = require("../src/modules/VoteManager");
-  const db = await getDatabase();
-  const nodeManager = new NodeManager(db.collection("nodes"));
-  const voteManager = new VoteManager(db.collection("votes"));
-  return await voteManager.createVote(user, type, node._id, nodeManager);
+  return await nodeManager.createNode(
+    createdBy,
+    dataType,
+    relationType,
+    title,
+    content,
+    parentId
+  );
 }
 
 module.exports = {
@@ -86,6 +86,5 @@ module.exports = {
   tearDownTestState,
   getDatabase,
   createTestUser,
-  generateTestNode,
-  generateTestVote
+  generateTestNode
 };

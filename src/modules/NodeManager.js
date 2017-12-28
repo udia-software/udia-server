@@ -19,7 +19,17 @@ class NodeManager {
    */
   async _batchNodes(keys) {
     return await this.collection
-      .find({ _id: { $in: keys.map(key => new ObjectID(key)) } })
+      .find({
+        _id: {
+          $in: keys.map(key => {
+            try {
+              return new ObjectID(key);
+            } catch (_err) {
+              return null;
+            }
+          })
+        }
+      })
       .toArray()
       .then(nodes => keys.map(id => nodes.find(n => n._id.equals(id)) || null));
   }
@@ -28,72 +38,80 @@ class NodeManager {
    * Recursively build the filter tree. Outputs a mongodb compatible query
    * @param {NodeFilter} inputFilter - NodeFilter object (refer to schema)
    */
-  static _buildFilters(inputFilter) {
+  static _buildFilters({
+    OR,
+    id,
+    parent,
+    children_contains,
+    createdBy,
+    title_contains,
+    content_contains,
+    createdAt_lt,
+    createdAt_lte,
+    createdAt_gt,
+    createdAt_gte
+  }) {
     const outputFilter = {};
-    if (inputFilter.id !== undefined) {
-      outputFilter._id = inputFilter.id;
+
+    // ID queries
+    if (id !== undefined) {
+      try {
+        outputFilter._id = new ObjectID(id);
+      } catch (_err) {
+        outputFilter._id = new ObjectID();
+      }
     }
-    if (inputFilter.title_contains) {
-      outputFilter.title = { $regex: `.*${inputFilter.title_contains}.*` };
+    if (parent !== undefined) {
+      try {
+        outputFilter.parentId = new ObjectID(parent);
+      } catch (_err) {
+        outputFilter.parentId = new ObjectID();
+      }
     }
-    if (inputFilter.content_contains) {
-      outputFilter.content = { $regex: `.*${inputFilter.content_contains}.*` };
+    if (children_contains !== undefined) {
+      outputFilter.childrenIds = children_contains;
+    }
+    if (createdBy !== undefined) {
+      outputFilter.createdById = createdBy;
+    }
+
+    if (title_contains) {
+      outputFilter.title = { $regex: `.*${title_contains}.*` };
+    }
+    if (content_contains) {
+      outputFilter.content = { $regex: `.*${content_contains}.*` };
     }
 
     // createdAt Time queries
-    if (inputFilter.createdAt_lt) {
+    if (createdAt_lt) {
       outputFilter.createdAt = {
         ...(outputFilter.createdAt || {}),
-        $lt: inputFilter.createdAt_lt
+        $lt: createdAt_lt
       };
     }
-    if (inputFilter.createdAt_lte) {
+    if (createdAt_lte) {
       outputFilter.createdAt = {
         ...(outputFilter.createdAt || {}),
-        $lte: inputFilter.createdAt_lte
+        $lte: createdAt_lte
       };
     }
-    if (inputFilter.createdAt_gt) {
+    if (createdAt_gt) {
       outputFilter.createdAt = {
         ...(outputFilter.createdAt || {}),
-        $gt: inputFilter.createdAt_gt
+        $gt: createdAt_gt
       };
     }
-    if (inputFilter.createdAt_gte) {
+    if (createdAt_gte) {
       outputFilter.createdAt = {
         ...(outputFilter.createdAt || {}),
-        $gte: inputFilter.createdAt_gte
+        $gte: createdAt_gte
       };
     }
 
-    // updatedAt Time queries
-    if (inputFilter.updatedAt_lt) {
-      outputFilter.updatedAt = {
-        ...(outputFilter.updatedAt || {}),
-        $lt: inputFilter.updatedAt_lt
-      };
-    }
-    if (inputFilter.updatedAt_lte) {
-      outputFilter.updatedAt = {
-        ...(outputFilter.updatedAt || {}),
-        $lte: inputFilter.updatedAt_lte
-      };
-    }
-    if (inputFilter.updatedAt_gt) {
-      outputFilter.updatedAt = {
-        ...(outputFilter.updatedAt || {}),
-        $gt: inputFilter.updatedAt_gt
-      };
-    }
-    if (inputFilter.updatedAt_gte) {
-      outputFilter.updatedAt = {
-        ...(outputFilter.updatedAt || {}),
-        $gte: inputFilter.updatedAt_gte
-      };
-    }
+    // recursive structure build for OR
     let filters = Object.keys(outputFilter).length ? [outputFilter] : [];
-    for (let i = 0; i < (inputFilter.OR || []).length; i++) {
-      filters = filters.concat(NodeManager._buildFilters(inputFilter.OR[i]));
+    for (let i = 0; i < (OR || []).length; i++) {
+      filters = filters.concat(NodeManager._buildFilters(OR[i]));
     }
     return filters;
   }
@@ -101,11 +119,20 @@ class NodeManager {
   /**
    * Function for creating a single node
    * @param {*} createdBy - Mongo Document, user who created the node. Should have _id prop
-   * @param {String} type - Type of node ["TEXT", "URL"]
+   * @param {String} dataType - Type of node ["TEXT", "URL"]
+   * @param {String} relationType - Relation of node ["POST", "COMMENT", "UPDATE"]
    * @param {String} title - String, title of node
    * @param {String} content - String, content of node
+   * @param {String?} parentId - MongoID of parent node
    */
-  async createNode(createdBy, type, title, content) {
+  async createNode(
+    createdBy,
+    dataType,
+    relationType,
+    title,
+    content,
+    parentId
+  ) {
     const errors = [];
 
     // Auth Validation
@@ -118,12 +145,21 @@ class NodeManager {
       });
     }
 
-    // Type Validation
+    // DataType Validation
     // * Check if type in ENUM defs
-    if (["TEXT", "URL"].indexOf(type) < 0) {
+    if (["TEXT", "URL"].indexOf(dataType) < 0) {
       errors.push({
-        key: "type",
-        message: "Type must be TEXT or URL."
+        key: "dataType",
+        message: "DataType must be TEXT or URL."
+      });
+    }
+
+    // RelationType Validation
+    // * Check if type in ENUM defs
+    if (["POST", "COMMENT", "UPDATE"].indexOf(relationType) < 0) {
+      errors.push({
+        key: "relationType",
+        message: "RelationType must be POST, COMMENT, or UPDATE."
       });
     }
 
@@ -147,7 +183,7 @@ class NodeManager {
 
     // URL Validation
     // * Check ONLY WHEN type is URL that content is a valid URL
-    if (type === "URL") {
+    if (dataType === "URL") {
       try {
         new URL(content);
       } catch (_) {
@@ -158,18 +194,41 @@ class NodeManager {
       }
     }
 
+    // Parent Validation
+    // * Check if Valid MongoID and is existing node
+    let parentIdValidated = null;
+    if (parentId) {
+      try {
+        parentIdValidated = new ObjectID(parentId);
+      } catch (_err) {
+        errors.push({
+          key: "parentId",
+          message: "ParentId must be a valid Mongo ObjectID."
+        });
+      }
+    }
+    if (parentIdValidated) {
+      const parent = await this.collection.findOne({ _id: parentIdValidated });
+      if (!parent) {
+        errors.push({
+          key: "parentId",
+          message: "Parent must exist."
+        });
+      }
+    }
+
     if (errors.length) {
       throw new ValidationError(errors);
     }
 
-    const now = new Date();
     const newNode = {
-      type,
+      dataType,
+      relationType,
       title,
       content,
-      createdAt: now,
-      updatedAt: now,
-      createdById
+      createdAt: new Date(),
+      createdById,
+      parentId: parentIdValidated
     };
     const response = await this.collection.insert(newNode);
     return Object.assign({ _id: response.insertedIds[0] }, newNode);
@@ -182,7 +241,7 @@ class NodeManager {
    * @param {Number|null} skip - integer, number of objects to skip
    * @param {Number|null} first - integer, number of objects to return after skip
    */
-  async allNodes(filter, orderBy, skip, first) {
+  async allNodes(filter, orderBy = null, skip = null, first = null) {
     let query = filter ? { $or: NodeManager._buildFilters(filter) } : {};
     const cursor = this.collection.find(query);
     if (skip) {
@@ -193,20 +252,14 @@ class NodeManager {
     }
 
     switch (orderBy) {
-    case "createdAt_ASC":
-      cursor.sort({ createdAt: 1 });
-      break;
-    case "createdAt_DESC":
-      cursor.sort({ createdAt: -1 });
-      break;
-    case "updatedAt_ASC":
-      cursor.sort({ updatedAt: 1 });
-      break;
-    case "updatedAt_DESC":
-      cursor.sort({ updatedAt: -1 });
-      break;
-    default:
-      break;
+      case "createdAt_ASC":
+        cursor.sort({ createdAt: 1 });
+        break;
+      case "createdAt_DESC":
+        cursor.sort({ createdAt: -1 });
+        break;
+      default:
+        break;
     }
     return await cursor.toArray();
   }
