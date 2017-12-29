@@ -1,5 +1,6 @@
 "use strict";
 
+const auth = require("../src/modules/Auth");
 const connectMongo = require("../src/connectMongo");
 
 let _mongo = null;
@@ -59,6 +60,18 @@ async function createTestUser({
   return await userManager.createUser(username, email, rawPassword);
 }
 
+async function getJWT({ rawPassword = "Secret123", email = "test@test.com" }) {
+  const UserManager = require("../src/modules/UserManager");
+  const db = await getDatabase();
+  const userManager = new UserManager(db.collection("users"));
+  const { token } = await auth.authenticateUser(
+    rawPassword,
+    email,
+    userManager
+  );
+  return token;
+}
+
 async function generateTestNode({
   createdBy,
   dataType = "TEXT",
@@ -85,5 +98,6 @@ module.exports = {
   tearDownTestState,
   getDatabase,
   createTestUser,
+  getJWT,
   generateTestNode
 };

@@ -29,9 +29,7 @@ const start = async () => {
 
   const buildOptions = async req => {
     const userManager = new UserManager(db.collection("users"));
-    let user = await verifyUserJWT(req, userManager).catch(() => {
-      return null;
-    });
+    let user = await verifyUserJWT(req, userManager);
     return {
       context: {
         Users: userManager,

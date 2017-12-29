@@ -48,7 +48,7 @@ module.exports = {
       return await Users.getUserById(createdById);
     },
     parent: async ({ parentId }, _data, { Nodes }) => {
-      const parentNodes = await Nodes.allNodes({parent: parentId});
+      const parentNodes = await Nodes.allNodes({id: parentId});
       return parentNodes && parentNodes.length && parentNodes[0] || null;
     }
   },

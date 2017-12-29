@@ -12,7 +12,7 @@ const typeDefs = `
     title: String!
     content: String!
     parent: Node @relation(name: "NodeParent")
-    children: [Node!]! @relation(name: "NodeChildren")
+    children: [Node!] @relation(name: "NodeChildren")
     createdBy: User! @relation(name: "UserNodes")
     createdAt: DateTime!
     updatedAt: DateTime!
@@ -58,7 +58,7 @@ const typeDefs = `
   type User @model {
     _id: ID! @isUnique
     username: String! @isUnique
-    nodes: [Node!]! @relation(name: "UserNodes")
+    nodes: [Node!] @relation(name: "UserNodes")
     createdAt: DateTime!
     updatedAt: DateTime!
   }
@@ -66,7 +66,7 @@ const typeDefs = `
   type FullUser @model {
     _id: ID! @isUnique
     username: String! @isUnique
-    nodes: [Node!]! @relation(name: "UserNodes")
+    nodes: [Node!] @relation(name: "UserNodes")
     createdAt: DateTime!
     updatedAt: DateTime!
     email: String! @isUnique
