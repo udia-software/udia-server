@@ -15,6 +15,7 @@ const typeDefs = `
     children: [Node!]! @relation(name: "NodeChildren")
     createdBy: User! @relation(name: "UserNodes")
     createdAt: DateTime!
+    updatedAt: DateTime!
   }
 
   enum NodeDataType {
@@ -25,14 +26,13 @@ const typeDefs = `
   enum NodeRelationType {
     POST
     COMMENT
-    UPDATE
   }
   
   input NodeFilter {
     OR: [NodeFilter!]
     id: ID
     parent: ID
-    children_contains: ID
+    children_contains: [ID!]
     createdBy: ID
     title_contains: String
     content_contains: String
@@ -40,11 +40,17 @@ const typeDefs = `
     createdAt_lte: DateTime
     createdAt_gt: DateTime
     createdAt_gte: DateTime
+    updatedAt_lt: DateTime
+    updatedAt_lte: DateTime
+    updatedAt_gt: DateTime
+    updatedAt_gte: DateTime
   }
 
   enum NodeOrderBy {
     createdAt_ASC
     createdAt_DESC
+    updatedAt_ASC
+    updatedAt_DESC
   }
 
   ${"" /* Users */}

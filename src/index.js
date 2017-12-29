@@ -16,11 +16,15 @@ const NodeManager = require("./modules/NodeManager");
 const UserManager = require("./modules/UserManager");
 
 const start = async () => {
-  const db = await connectMongo().catch(err => {
-    // eslint-disable-next-line no-console
-    console.error(err);
-    process.exit(1);
-  });
+  const db = await connectMongo().catch(
+    // coverage don't care about db connection errors.
+    /* istanbul ignore next */
+    err => {
+      // eslint-disable-next-line no-console
+      console.error(err);
+      process.exit(1);
+    }
+  );
   const app = express();
 
   const buildOptions = async req => {
@@ -46,6 +50,8 @@ const start = async () => {
 
   app.use(cors());
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
+  // coverage don't care about vetting developer graphiql route
+  /* istanbul ignore next */
   if (NODE_ENV !== "production") {
     const jwt = TEST_JWT; // hardcode user jwt for testing purposes
     app.use(
@@ -72,6 +78,8 @@ const start = async () => {
         path: "/subscriptions"
       }
     );
+    // coverage don't care about non test console output.
+    /* istanbul ignore next */
     if (NODE_ENV !== "test") {
       // eslint-disable-next-line no-console
       console.log(`UDIA GraphQL server running on port ${PORT}.`);
@@ -91,6 +99,8 @@ const start = async () => {
   return server;
 };
 
+// coverage don't care about `node index.js`
+/* istanbul ignore next */
 if (require.main === module) {
   start();
 }

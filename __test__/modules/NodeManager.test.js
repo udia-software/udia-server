@@ -203,6 +203,48 @@ describe("NodeManager Module", () => {
       );
       done();
     });
+
+    it("should error on creating node with invalid parent", async done => {
+      const db = await testHelper.getDatabase();
+      const nodeManager = new NodeManager(db.collection("nodes"));
+      const createdBy = await testHelper.createTestUser({});
+      const fakeId = new ObjectId();
+      await expect(
+        nodeManager.createNode(
+          createdBy,
+          "TEXT",
+          "COMMENT",
+          "Title",
+          "Content",
+          fakeId + ""
+        )
+      ).rejects.toEqual(
+        new ValidationError([
+          {
+            key: "parentId",
+            message: "Parent must exist."
+          }
+        ])
+      );
+      await expect(
+        nodeManager.createNode(
+          createdBy,
+          "TEXT",
+          "COMMENT",
+          "Title",
+          "Content",
+          "badid"
+        )
+      ).rejects.toEqual(
+        new ValidationError([
+          {
+            key: "parentId",
+            message: "ParentId must be a valid Mongo ObjectID."
+          }
+        ])
+      );
+      done();
+    });
   });
 
   describe("Query", () => {
@@ -326,6 +368,46 @@ describe("NodeManager Module", () => {
       done();
     });
 
+    it("should filter nodes by updatedAt", async done => {
+      const db = await testHelper.getDatabase();
+      const nodeManager = new NodeManager(db.collection("nodes"));
+      const createdBy = await testHelper.createTestUser({});
+      const beforeNodeTime = new Date(new Date().getTime() - 1000);
+      const node = await testHelper.generateTestNode({
+        createdBy
+      });
+      const afterNodeTime = new Date(new Date().getTime() + 1000);
+      const ltNodes = await nodeManager.allNodes(
+        { updatedAt_lt: afterNodeTime },
+        null,
+        null,
+        null
+      );
+      expect(ltNodes).toContainEqual(node);
+      const lteNodes = await nodeManager.allNodes(
+        { updatedAt_lte: afterNodeTime },
+        null,
+        null,
+        null
+      );
+      expect(lteNodes).toContainEqual(node);
+      const gtNodes = await nodeManager.allNodes(
+        { updatedAt_gt: beforeNodeTime },
+        null,
+        null,
+        null
+      );
+      expect(gtNodes).toContainEqual(node);
+      const gteNodes = await nodeManager.allNodes(
+        { updatedAt_gte: beforeNodeTime },
+        null,
+        null,
+        null
+      );
+      expect(gteNodes).toContainEqual(node);
+      done();
+    });
+
     it("should filter nodes by parent", async done => {
       const db = await testHelper.getDatabase();
       const nodeManager = new NodeManager(db.collection("nodes"));
@@ -342,6 +424,76 @@ describe("NodeManager Module", () => {
         parent: node._id + ""
       });
       expect(hasParentNodes).toContainEqual(commentNode);
+      const noParentNodes = await nodeManager.allNodes({
+        parent: commentNode._id + ""
+      });
+      expect(noParentNodes).toHaveLength(0);
+      const nullParentNodes = await nodeManager.allNodes({
+        parent: null
+      });
+      expect(nullParentNodes).toContainEqual(
+        await nodeManager._getNodeById(node._id)
+      );
+      const badIdNodes = await nodeManager.allNodes({
+        parent: "foobar"
+      });
+      expect(badIdNodes).toHaveLength(0);
+      done();
+    });
+
+    it("should filter nodes by children", async done => {
+      const db = await testHelper.getDatabase();
+      const nodeManager = new NodeManager(db.collection("nodes"));
+      const createdBy = await testHelper.createTestUser({});
+      const node = await testHelper.generateTestNode({
+        createdBy
+      });
+      const commentNode = await testHelper.generateTestNode({
+        createdBy,
+        relationType: "COMMENT",
+        parentId: node._id + ""
+      });
+      const hasChildrenNodes = await nodeManager.allNodes({
+        children_contains: [commentNode._id + ""]
+      });
+      expect(hasChildrenNodes).toContainEqual(
+        await nodeManager._getNodeById(node._id)
+      );
+      const newCommentNode = await testHelper.generateTestNode({
+        createdBy,
+        relationType: "COMMENT",
+        parentId: node._id + ""
+      });
+      const hasMultipleChildrenNodes = await nodeManager.allNodes({
+        children_contains: [commentNode._id, newCommentNode._id]
+      });
+      expect(hasMultipleChildrenNodes).toContainEqual(
+        await nodeManager._getNodeById(node._id, true)
+      );
+      const noChildrenNodes = await nodeManager.allNodes({
+        children_contains: [node._id + ""]
+      });
+      expect(noChildrenNodes).toHaveLength(0);
+      const nullChildrenNodes = await nodeManager.allNodes({
+        children_contains: null
+      });
+      expect(nullChildrenNodes).toContainEqual(commentNode);
+      const badIdNodes = await nodeManager.allNodes({
+        children_contains: ["foobar"]
+      });
+      expect(badIdNodes).toHaveLength(0);
+      done();
+    });
+
+    it("should filter nodes by createdBy", async done => {
+      const db = await testHelper.getDatabase();
+      const nodeManager = new NodeManager(db.collection("nodes"));
+      const createdBy = await testHelper.createTestUser({});
+      const node = await testHelper.generateTestNode({ createdBy });
+      const createdByNodes = await nodeManager.allNodes({
+        createdBy: createdBy._id
+      });
+      expect(createdByNodes).toContainEqual(node);
       done();
     });
 
@@ -369,6 +521,38 @@ describe("NodeManager Module", () => {
       const descNodes = await nodeManager.allNodes(
         null,
         "createdAt_DESC",
+        null,
+        null
+      );
+      expect(descNodes).toHaveLength(2);
+      expect(descNodes[0]).toEqual(nodeB);
+      expect(descNodes[1]).toEqual(nodeA);
+      done();
+    });
+
+    it("should order by updatedAt", async done => {
+      const db = await testHelper.getDatabase();
+      const nodeManager = new NodeManager(db.collection("nodes"));
+      const createdBy = await testHelper.createTestUser({});
+      const nodeA = await testHelper.generateTestNode({
+        createdBy
+      });
+      await new Promise(resolve => setTimeout(resolve, 2));
+      const nodeB = await testHelper.generateTestNode({
+        createdBy
+      });
+      const ascNodes = await nodeManager.allNodes(
+        null,
+        "updatedAt_ASC",
+        null,
+        null
+      );
+      expect(ascNodes).toHaveLength(2);
+      expect(ascNodes[0]).toEqual(nodeA);
+      expect(ascNodes[1]).toEqual(nodeB);
+      const descNodes = await nodeManager.allNodes(
+        null,
+        "updatedAt_DESC",
         null,
         null
       );
@@ -446,6 +630,28 @@ describe("NodeManager Module", () => {
       );
       expect(firstC).toHaveLength(1);
       expect(firstC).toContainEqual(nodeC);
+      done();
+    });
+  });
+
+  describe("Meta", () => {
+    it("should use dataloader to get a node by ID", async done => {
+      const db = await testHelper.getDatabase();
+      const nodeManager = new NodeManager(db.collection("nodes"));
+      const createdBy = await testHelper.createTestUser({});
+      const node = await testHelper.generateTestNode({
+        createdBy
+      });
+      expect(await nodeManager._getNodeById(node._id)).toBeDefined();
+      done();
+    });
+
+    it("should gracefully handle bad keys", async done => {
+      const db = await testHelper.getDatabase();
+      const nodeManager = new NodeManager(db.collection("nodes"));
+      expect(await nodeManager._getNodeById(new ObjectId())).toBeNull();
+      expect(await nodeManager._getNodeById("")).toBeNull();
+      expect(await nodeManager._getNodeById("bloop")).toBeNull();
       done();
     });
   });

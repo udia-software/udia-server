@@ -49,7 +49,11 @@ class NodeManager {
     createdAt_lt,
     createdAt_lte,
     createdAt_gt,
-    createdAt_gte
+    createdAt_gte,
+    updatedAt_lt,
+    updatedAt_lte,
+    updatedAt_gt,
+    updatedAt_gte
   }) {
     const outputFilter = {};
 
@@ -61,16 +65,31 @@ class NodeManager {
         outputFilter._id = new ObjectID();
       }
     }
-    if (parent !== undefined) {
+
+    if (parent === null) {
+      outputFilter.parentId = null;
+    } else if (parent !== undefined) {
       try {
         outputFilter.parentId = new ObjectID(parent);
       } catch (_err) {
         outputFilter.parentId = new ObjectID();
       }
     }
-    if (children_contains !== undefined) {
-      outputFilter.childrenIds = children_contains;
+
+    if (children_contains === null) {
+      outputFilter.childrenIds = [];
+    } else if (children_contains !== undefined) {
+      outputFilter.childrenIds = {
+        $all: children_contains.map(textId => {
+          try {
+            return new ObjectID(textId);
+          } catch (_err) {
+            return new ObjectID();
+          }
+        })
+      };
     }
+
     if (createdBy !== undefined) {
       outputFilter.createdById = createdBy;
     }
@@ -105,6 +124,31 @@ class NodeManager {
       outputFilter.createdAt = {
         ...(outputFilter.createdAt || {}),
         $gte: createdAt_gte
+      };
+    }
+    // updatedAt Time queries
+    if (updatedAt_lt) {
+      outputFilter.updatedAt = {
+        ...(outputFilter.updatedAt || {}),
+        $lt: updatedAt_lt
+      };
+    }
+    if (updatedAt_lte) {
+      outputFilter.updatedAt = {
+        ...(outputFilter.updatedAt || {}),
+        $lte: updatedAt_lte
+      };
+    }
+    if (updatedAt_gt) {
+      outputFilter.updatedAt = {
+        ...(outputFilter.updatedAt || {}),
+        $gt: updatedAt_gt
+      };
+    }
+    if (updatedAt_gte) {
+      outputFilter.updatedAt = {
+        ...(outputFilter.updatedAt || {}),
+        $gte: updatedAt_gte
       };
     }
 
@@ -221,17 +265,28 @@ class NodeManager {
       throw new ValidationError(errors);
     }
 
+    const now = new Date();
     const newNode = {
       dataType,
       relationType,
       title,
       content,
-      createdAt: new Date(),
+      createdAt: now,
+      updatedAt: now,
       createdById,
-      parentId: parentIdValidated
+      parentId: parentIdValidated,
+      childrenIds: []
     };
     const response = await this.collection.insert(newNode);
-    return Object.assign({ _id: response.insertedIds[0] }, newNode);
+    const newNodeId = response.insertedIds[0];
+    if (parentIdValidated) {
+      // update the parent id with the child
+      await this.collection.update(
+        { _id: parentIdValidated },
+        { $push: { childrenIds: new ObjectID(newNodeId) } }
+      );
+    }
+    return Object.assign({ _id: newNodeId }, newNode);
   }
 
   /**
@@ -258,10 +313,28 @@ class NodeManager {
       case "createdAt_DESC":
         cursor.sort({ createdAt: -1 });
         break;
+      case "updatedAt_ASC":
+        cursor.sort({ updatedAt: 1 });
+        break;
+      case "updatedAt_DESC":
+        cursor.sort({ updatedAt: -1 });
+        break;
       default:
         break;
     }
     return await cursor.toArray();
+  }
+
+  /**
+   * Get a node from the dataloader by ID
+   * @param {string} id - string representation of mongo object ID
+   * @param {bool?} clearCache - whether or not to clear the dataloader cache
+   */
+  async _getNodeById(id, clearCache = false) {
+    if (clearCache) {
+      this.nodeLoader.clear(id);
+    }
+    return await this.nodeLoader.load(id);
   }
 }
 

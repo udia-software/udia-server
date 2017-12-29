@@ -10,8 +10,7 @@ let _mongo = null;
  */
 async function initializeTestState(clearDatabase = true) {
   if (!_mongo) {
-    // kind of a hack to switch to using a test database
-    _mongo = await connectMongo("_test").catch(err => {
+    _mongo = await connectMongo().catch(err => {
       // eslint-disable-next-line no-console
       console.error(err);
       process.exit(1);
