@@ -34,8 +34,8 @@ module.exports = {
       await Users.createUser(username, email, password);
       return await authenticateUser(password, email, Users);
     },
-    signinUser: async (_root, { email: { email, rawPassword } }, { Users }) => {
-      return await authenticateUser(rawPassword, email, Users);
+    signinUser: async (_root, { email: { email, password } }, { Users }) => {
+      return await authenticateUser(password, email, Users);
     }
   },
   Subscription: {
@@ -53,6 +53,16 @@ module.exports = {
     }
   },
   User: {
+    nodes: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
+      return await Nodes.allNodes(
+        { ...filter, createdBy: _id },
+        orderBy,
+        skip,
+        first
+      );
+    }
+  },
+  FullUser: {
     nodes: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
       return await Nodes.allNodes(
         { ...filter, createdBy: _id },

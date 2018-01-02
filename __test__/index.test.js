@@ -11,4 +11,11 @@ describe("Index", () => {
       done();
     }, 10);
   });
+
+  it("should immediately close without crashing", async done => {
+    const server = await start();
+    // closes before subscription server starts
+    await server.close();
+    done();
+  });
 });

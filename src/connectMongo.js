@@ -4,15 +4,15 @@ const { MongoClient } = require("mongodb");
 const { MONGODB_URI } = require("./constants");
 const { NODE_ENV } = require("./constants");
 
+// coverage don't care about db connection code
+/* istanbul ignore next */
 /**
  * Connect to the mongo daemon and return the database client instance.
  */
-const connectMongo = async suffix => {
+const connectMongo = async () => {
   if (NODE_ENV === "test") {
     return await MongoClient.connect(MONGODB_URI + "_test");
   }
-  // coverage don't care about db non test db.
-  /* istanbul ignore next */
   return await MongoClient.connect(MONGODB_URI);
   // Development Performance Logging
   // const { Logger } = require("mongodb");

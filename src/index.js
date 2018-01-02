@@ -85,13 +85,11 @@ const start = async () => {
   });
 
   server.on("close", async () => {
-    // subscriptionServer can be null if close called immediately after server start
+    // subscriptionServer can be null if server immediately closes
     if (subscriptionServer) {
       await subscriptionServer.close();
     }
-    if (db) {
-      await db.close();
-    }
+    await db.close();
   });
 
   return server;

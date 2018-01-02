@@ -55,6 +55,9 @@ describe("Resolvers", () => {
           }
           createdBy {
             _id
+            nodes {
+              _id
+            }
           }
         }
       }`;
@@ -63,7 +66,7 @@ describe("Resolvers", () => {
       expect(noNodesResponse.status).toBe(200);
       expect(noNodesResponse.data).toEqual({ data: { allNodes: [] } });
 
-      const db = await testHelper.getDatabase();
+      await testHelper.getDatabase();
       const createdBy = await testHelper.createTestUser({});
       const node = await testHelper.generateTestNode({
         createdBy
@@ -74,7 +77,17 @@ describe("Resolvers", () => {
         parentId: node._id + ""
       });
 
-      data = { query, variables: { filter: { parent: node._id + "" } } };
+      data = {
+        query,
+        variables: {
+          filter: {
+            parent: node._id + "",
+            createdAt_lte: new Date(),
+            updatedAt_lte: Date.now() // also handles milisecond timestamps
+          }
+        }
+      };
+
       const queryResponse = await client.post("/graphql", data);
       expect(queryResponse.status).toBe(200);
       expect(queryResponse.data).toEqual({
@@ -84,7 +97,17 @@ describe("Resolvers", () => {
               _id: "" + commentNode._id,
               children: null,
               content: "Test Node Content",
-              createdBy: { _id: "" + createdBy._id },
+              createdBy: {
+                _id: "" + createdBy._id,
+                nodes: [
+                  {
+                    _id: "" + node._id
+                  },
+                  {
+                    _id: "" + commentNode._id
+                  }
+                ]
+              },
               dataType: "TEXT",
               parent: { _id: "" + node._id },
               relationType: "COMMENT",
@@ -93,7 +116,13 @@ describe("Resolvers", () => {
           ]
         }
       });
-      done();
+
+      data = { query, variables: { filter: 1 } };
+      client.post("/graphql", data).catch(err => {
+        // invalid queries throw 400, but otherwise GraphQL errors in json
+        expect(err.response.status).toBe(400);
+        done();
+      });
     });
 
     it("should validly query for me", async done => {
@@ -114,6 +143,9 @@ describe("Resolvers", () => {
       expect(noUserResponse.data).toEqual({ data: { me: null } });
 
       const resolverUser = await testHelper.createTestUser({});
+      const testNode = await testHelper.generateTestNode({
+        createdBy: resolverUser
+      });
       const jwt = await testHelper.getJWT({});
       const userResponse = await client.post("/graphql", data, {
         headers: { authorization: jwt }
@@ -124,7 +156,7 @@ describe("Resolvers", () => {
           me: {
             _id: "" + resolverUser._id,
             email: resolverUser.email,
-            nodes: null,
+            nodes: [{ _id: "" + testNode._id }],
             username: resolverUser.username
           }
         }
@@ -136,6 +168,201 @@ describe("Resolvers", () => {
       expect(badUserResponse.status).toBe(200);
       expect(badUserResponse.data).toEqual({ data: { me: null } });
 
+      done();
+    });
+  });
+
+  describe("Mutation", () => {
+    it("should validly create a node", async done => {
+      const query = `
+      mutation createNode(
+        $dataType: NodeDataType!,
+        $relationType: NodeRelationType!,
+        $title: String!,
+        $content: String!,
+        $parentId: ID
+      ) {
+        createNode(
+          dataType: $dataType,
+          relationType: $relationType,
+          title: $title,
+          content: $content,
+          parentId: $parentId
+        ) {
+          dataType
+          relationType
+          title
+          content
+          parent {
+            _id
+          }
+          children {
+            _id
+          }
+          createdBy {
+            _id
+          }
+        }
+      }`;
+      const data = {
+        query,
+        variables: {
+          dataType: "TEXT",
+          relationType: "POST",
+          title: "Test Create Node Resolver",
+          content: "Test Create Node Resolver Content String!"
+        }
+      };
+      const mutationResponse = await client.post("/graphql", data);
+      expect(mutationResponse.status).toBe(200);
+      expect(mutationResponse.data).toEqual({
+        data: null,
+        errors: [
+          {
+            locations: [{ column: 9, line: 9 }],
+            message: "The request is invalid.",
+            path: ["createNode"],
+            state: { createdBy: ["User must be authenticated."] }
+          }
+        ]
+      });
+
+      const resolverUser = await testHelper.createTestUser({});
+      const jwt = await testHelper.getJWT({});
+      const userResponse = await client.post("/graphql", data, {
+        headers: { authorization: jwt }
+      });
+      expect(userResponse.status).toBe(200);
+      expect(userResponse.data).toEqual({
+        data: {
+          createNode: {
+            children: null,
+            content: "Test Create Node Resolver Content String!",
+            createdBy: { _id: "" + resolverUser._id },
+            dataType: "TEXT",
+            parent: null,
+            relationType: "POST",
+            title: "Test Create Node Resolver"
+          }
+        }
+      });
+      done();
+    });
+
+    it("should validly create a user", async done => {
+      const query = `
+      mutation createUser(
+        $email: String!,
+        $username: String!,
+        $password: String!
+      ) {
+        createUser(email: $email, username: $username, password: $password) {
+          token
+          user {
+            _id
+            username
+            nodes {
+              _id
+            }
+            createdAt
+            updatedAt
+            email
+            passwordHash
+          }
+        }
+      }`;
+      const data = {
+        query,
+        variables: {
+          email: "testEmail@bar.baz",
+          username: "resolverTest",
+          password: "Secret123"
+        }
+      };
+      const userResponse = await client.post("/graphql", data);
+      expect(userResponse.status).toBe(200);
+      expect(userResponse.data.data.createUser).toHaveProperty("token");
+      expect(userResponse.data.data.createUser.user).toHaveProperty("_id");
+      expect(userResponse.data.data.createUser.user).toHaveProperty(
+        "createdAt"
+      );
+      expect(userResponse.data.data.createUser.user).toHaveProperty(
+        "email",
+        "testEmail@bar.baz"
+      );
+      expect(userResponse.data.data.createUser.user).toHaveProperty(
+        "nodes",
+        []
+      );
+      expect(userResponse.data.data.createUser.user).toHaveProperty(
+        "passwordHash"
+      );
+      expect(userResponse.data.data.createUser.user).toHaveProperty(
+        "updatedAt"
+      );
+      expect(userResponse.data.data.createUser.user).toHaveProperty(
+        "username",
+        "resolverTest"
+      );
+      done();
+    });
+
+    it("should validly sign in a user", async done => {
+      const query = `
+      mutation signinUser($email: String!, $password: String!) {
+        signinUser(email: { email: $email, password: $password }) {
+          token
+          user {
+            _id
+            username
+            nodes {
+              _id
+            }
+            createdAt
+            updatedAt
+            email
+            passwordHash
+          }
+        }
+      }
+      `;
+      const data = {
+        query,
+        variables: {
+          email: "testEmail@bar.baz",
+          password: "Secret123"
+        }
+      };
+      await testHelper.createTestUser({
+        username: "resolverTest",
+        email: "testEmail@bar.baz",
+        rawPassword: "Secret123"
+      });
+      const userResponse = await client.post("/graphql", data);
+      expect(userResponse.status).toBe(200);
+      expect(userResponse.data.data.signinUser).toHaveProperty("token");
+      expect(userResponse.data.data.signinUser.user).toHaveProperty("_id");
+      expect(userResponse.data.data.signinUser.user).toHaveProperty(
+        "createdAt"
+      );
+      expect(userResponse.data.data.signinUser.user).toHaveProperty(
+        "email",
+        "testEmail@bar.baz"
+      );
+      expect(userResponse.data.data.signinUser.user).toHaveProperty(
+        "nodes",
+        []
+      );
+      expect(userResponse.data.data.signinUser.user).toHaveProperty(
+        "passwordHash"
+      );
+      expect(userResponse.data.data.signinUser.user).toHaveProperty(
+        "updatedAt"
+      );
+      expect(userResponse.data.data.signinUser.user).toHaveProperty(
+        "username",
+        "resolverTest"
+      );
       done();
     });
   });
