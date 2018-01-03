@@ -36,6 +36,22 @@ module.exports = {
     },
     signinUser: async (_root, { email: { email, password } }, { Users }) => {
       return await authenticateUser(password, email, Users);
+    },
+    updateNode: async (
+      _root,
+      { id, dataType, title, content },
+      { Nodes, user }
+    ) => {
+      const updatedNode = await Nodes.updateNode(
+        id,
+        user,
+        dataType,
+        title,
+        content
+      );
+      pubSub.publish("Node", {
+        Node: { mutation: "UPDATED", node: updatedNode }
+      });
     }
   },
   Subscription: {
@@ -47,15 +63,26 @@ module.exports = {
     createdBy: async ({ createdById }, _data, { Users }) => {
       return await Users.getUserById(createdById);
     },
+    updatedBy: async ({ updatedById }, _data, { Users }) => {
+      return await Users.getUserById(updatedById);
+    },
     parent: async ({ parentId }, _data, { Nodes }) => {
       const parentNodes = await Nodes.allNodes({ id: parentId });
       return (parentNodes && parentNodes.length && parentNodes[0]) || null;
     }
   },
   User: {
-    nodes: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
+    createdNodes: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
       return await Nodes.allNodes(
         { ...filter, createdBy: _id },
+        orderBy,
+        skip,
+        first
+      );
+    },
+    updatedNodes: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
+      return await Nodes.allNodes(
+        { ...filter, updatedBy: _id },
         orderBy,
         skip,
         first
@@ -63,9 +90,17 @@ module.exports = {
     }
   },
   FullUser: {
-    nodes: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
+    createdNodes: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
       return await Nodes.allNodes(
         { ...filter, createdBy: _id },
+        orderBy,
+        skip,
+        first
+      );
+    },
+    updatedNodes: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
+      return await Nodes.allNodes(
+        { ...filter, updatedBy: _id },
         orderBy,
         skip,
         first

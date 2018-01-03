@@ -55,7 +55,10 @@ describe("Resolvers", () => {
           }
           createdBy {
             _id
-            nodes {
+            createdNodes {
+              _id
+            }
+            updatedNodes {
               _id
             }
           }
@@ -63,7 +66,8 @@ describe("Resolvers", () => {
       }`;
 
       let data = { query };
-      const noNodesResponse = await client.post("/graphql", data);
+      const noNodesResponse = await client.post("/graphql", data)
+        .catch(err => console.log(err.response.data));
       expect(noNodesResponse.status).toBe(200);
       expect(noNodesResponse.data).toEqual({ data: { allNodes: [] } });
 
@@ -87,7 +91,15 @@ describe("Resolvers", () => {
               content: "Test Node Content",
               createdBy: {
                 _id: "" + createdBy._id,
-                nodes: [
+                createdNodes: [
+                  {
+                    _id: "" + node._id
+                  },
+                  {
+                    _id: "" + commentNode._id
+                  }
+                ],
+                updatedNodes: [
                   {
                     _id: "" + node._id
                   },
@@ -142,7 +154,10 @@ describe("Resolvers", () => {
           }
           createdBy {
             _id
-            nodes {
+            createdNodes {
+              _id
+            }
+            updatedNodes {
               _id
             }
           }
@@ -167,7 +182,7 @@ describe("Resolvers", () => {
         me {
           _id
           username
-          nodes {
+          createdNodes {
             _id
           }
           email
@@ -192,7 +207,7 @@ describe("Resolvers", () => {
           me: {
             _id: "" + resolverUser._id,
             email: resolverUser.email,
-            nodes: [{ _id: "" + testNode._id }],
+            createdNodes: [{ _id: "" + testNode._id }],
             username: resolverUser.username
           }
         }
@@ -238,6 +253,9 @@ describe("Resolvers", () => {
           createdBy {
             _id
           }
+          updatedBy {
+            _id
+          }
         }
       }`;
       const data = {
@@ -275,6 +293,7 @@ describe("Resolvers", () => {
             children: null,
             content: "Test Create Node Resolver Content String!",
             createdBy: { _id: "" + resolverUser._id },
+            updatedBy: { _id: "" + resolverUser._id },
             dataType: "TEXT",
             parent: null,
             relationType: "POST",
@@ -297,7 +316,7 @@ describe("Resolvers", () => {
           user {
             _id
             username
-            nodes {
+            createdNodes {
               _id
             }
             createdAt
@@ -327,7 +346,7 @@ describe("Resolvers", () => {
         "testEmail@bar.baz"
       );
       expect(userResponse.data.data.createUser.user).toHaveProperty(
-        "nodes",
+        "createdNodes",
         []
       );
       expect(userResponse.data.data.createUser.user).toHaveProperty(
@@ -351,7 +370,7 @@ describe("Resolvers", () => {
           user {
             _id
             username
-            nodes {
+            createdNodes {
               _id
             }
             createdAt
@@ -386,7 +405,7 @@ describe("Resolvers", () => {
         "testEmail@bar.baz"
       );
       expect(userResponse.data.data.signinUser.user).toHaveProperty(
-        "nodes",
+        "createdNodes",
         []
       );
       expect(userResponse.data.data.signinUser.user).toHaveProperty(

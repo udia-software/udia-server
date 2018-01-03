@@ -13,7 +13,8 @@ const typeDefs = `
     content: String!
     parent: Node @relation(name: "NodeParent")
     children: [Node!] @relation(name: "NodeChildren")
-    createdBy: User! @relation(name: "UserNodes")
+    createdBy: User! @relation(name: "UserCreatedNodes")
+    updatedBy: User! @relation(name: "UserUpdatedNodes")
     createdAt: DateTime!
     updatedAt: DateTime!
   }
@@ -58,7 +59,8 @@ const typeDefs = `
   type User @model {
     _id: ID! @isUnique
     username: String! @isUnique
-    nodes: [Node!] @relation(name: "UserNodes")
+    createdNodes: [Node!] @relation(name: "UserCreatedNodes")
+    updatedNodes: [Node!] @relation(name: "UserUpdatedNodes")
     createdAt: DateTime!
     updatedAt: DateTime!
   }
@@ -66,7 +68,8 @@ const typeDefs = `
   type FullUser @model {
     _id: ID! @isUnique
     username: String! @isUnique
-    nodes: [Node!] @relation(name: "UserNodes")
+    createdNodes: [Node!] @relation(name: "UserCreatedNodes")
+    updatedNodes: [Node!] @relation(name: "UserUpdatedNodes")
     createdAt: DateTime!
     updatedAt: DateTime!
     email: String! @isUnique
@@ -94,6 +97,12 @@ const typeDefs = `
       title: String!,
       content: String!,
       parentId: ID
+    ): Node!
+    updateNode(
+      id: ID!,
+      dataType: NodeDataType,
+      title: String,
+      content: String
     ): Node!
     createUser(
       email: String!

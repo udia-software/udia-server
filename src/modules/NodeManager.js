@@ -14,6 +14,128 @@ class NodeManager {
   }
 
   /**
+   * Auth Validation, check if the user is authenticated
+   * @param {*} createdBy - Mongo Document containing user
+   * @param {Array} errors - Array of errors
+   */
+  static validateAuthenticated(createdBy, errors) {
+    const createdById = createdBy && createdBy._id;
+    if (!createdById) {
+      errors.push({
+        key: "createdBy",
+        message: "User must be authenticated."
+      });
+    }
+    return createdById;
+  }
+
+  /**
+   * Node DataType Validation, check if type in ENUM defs
+   * @param {string} dataType - String representation of data type
+   * @param {Array} errors - Array of errors
+   */
+  static validateDataType(dataType, errors) {
+    if (["TEXT", "URL"].indexOf(dataType) < 0) {
+      errors.push({
+        key: "dataType",
+        message: "DataType must be TEXT or URL."
+      });
+    }
+  }
+
+  /**
+   * RelationType Validation, check if type in ENUM defs
+   * @param {string} relationType - String representation of relation type
+   * @param {Array} errors - Array of errors
+   */
+  static validateRelationType(relationType, errors) {
+    if (["POST", "COMMENT"].indexOf(relationType) < 0) {
+      errors.push({
+        key: "relationType",
+        message: "RelationType must be POST or COMMENT."
+      });
+    }
+  }
+
+  /**
+   * Title Validation, check if title is empty
+   * @param {string} title - String representation of title
+   * @param {Array} errors - Array of errors
+   */
+  static validateTitle(title, errors) {
+    if (!title || !title.trim()) {
+      errors.push({
+        key: "title",
+        message: "Title must not be empty."
+      });
+    }
+  }
+
+  /**
+   * Content Validation, check if content is empty
+   * @param {string} content - String representation of content
+   * @param {Array} errors - Array of errors
+   */
+  static validateContent(content, errors) {
+    if (!content || !content.trim()) {
+      errors.push({
+        key: "content",
+        message: "Content must not be empty."
+      });
+    }
+  }
+
+  /**
+   * URL Validation, check ONLY WHEN type is URL that content is a valid URL
+   * @param {string} dataType - String representation of dataType
+   * @param {string} content - String representation of content
+   * @param {Array} errors - Array of errors
+   */
+  static validateURL(dataType, content, errors) {
+    if (dataType === "URL") {
+      try {
+        new URL(content);
+      }
+      catch (_) {
+        errors.push({
+          key: "content",
+          message: "Content must be a valid url."
+        });
+      }
+    }
+  }
+
+  /**
+   * Parent Validation, check if Valid MongoID and is existing node
+   * @param {string} parentId - String identifier for parent node
+   * @param {Array} errors - Array of errors
+   */
+  async validateParent(parentId, errors) {
+    let parentIdValidated = null;
+    if (parentId) {
+      try {
+        parentIdValidated = new ObjectID(parentId);
+      }
+      catch (_err) {
+        errors.push({
+          key: "parentId",
+          message: "ParentId must be a valid Mongo ObjectID."
+        });
+      }
+    }
+    if (parentIdValidated) {
+      const parent = await this.collection.findOne({ _id: parentIdValidated });
+      if (!parent) {
+        errors.push({
+          key: "parentId",
+          message: "Parent must exist."
+        });
+      }
+    }
+    return parentIdValidated;
+  }
+
+  /**
    * Function for dataloader to batch lookup nodes
    * @param {Array<string>} keys - Arrays of node ids to batch lookup
    */
@@ -44,6 +166,7 @@ class NodeManager {
     parent,
     children_contains,
     createdBy,
+    updatedBy,
     title_contains,
     content_contains,
     createdAt_lt,
@@ -92,6 +215,10 @@ class NodeManager {
 
     if (createdBy !== undefined) {
       outputFilter.createdById = createdBy;
+    }
+
+    if (updatedBy !== undefined) {
+      outputFilter.updatedById = updatedBy;
     }
 
     if (title_contains) {
@@ -178,88 +305,13 @@ class NodeManager {
     parentId
   ) {
     const errors = [];
-
-    // Auth Validation
-    // * Check if the user is authenticated
-    const createdById = createdBy && createdBy._id;
-    if (!createdById) {
-      errors.push({
-        key: "createdBy",
-        message: "User must be authenticated."
-      });
-    }
-
-    // DataType Validation
-    // * Check if type in ENUM defs
-    if (["TEXT", "URL"].indexOf(dataType) < 0) {
-      errors.push({
-        key: "dataType",
-        message: "DataType must be TEXT or URL."
-      });
-    }
-
-    // RelationType Validation
-    // * Check if type in ENUM defs
-    if (["POST", "COMMENT", "UPDATE"].indexOf(relationType) < 0) {
-      errors.push({
-        key: "relationType",
-        message: "RelationType must be POST, COMMENT, or UPDATE."
-      });
-    }
-
-    // Title Validation
-    // * Check if title is empty
-    if (!title || !title.trim()) {
-      errors.push({
-        key: "title",
-        message: "Title must not be empty."
-      });
-    }
-
-    // Content Validation
-    // * Check if content is empty
-    if (!content || !content.trim()) {
-      errors.push({
-        key: "content",
-        message: "Content must not be empty."
-      });
-    }
-
-    // URL Validation
-    // * Check ONLY WHEN type is URL that content is a valid URL
-    if (dataType === "URL") {
-      try {
-        new URL(content);
-      } catch (_) {
-        errors.push({
-          key: "content",
-          message: "Content must be a valid url."
-        });
-      }
-    }
-
-    // Parent Validation
-    // * Check if Valid MongoID and is existing node
-    let parentIdValidated = null;
-    if (parentId) {
-      try {
-        parentIdValidated = new ObjectID(parentId);
-      } catch (_err) {
-        errors.push({
-          key: "parentId",
-          message: "ParentId must be a valid Mongo ObjectID."
-        });
-      }
-    }
-    if (parentIdValidated) {
-      const parent = await this.collection.findOne({ _id: parentIdValidated });
-      if (!parent) {
-        errors.push({
-          key: "parentId",
-          message: "Parent must exist."
-        });
-      }
-    }
+    const createdById = NodeManager.validateAuthenticated(createdBy, errors);
+    NodeManager.validateDataType(dataType, errors);
+    NodeManager.validateRelationType(relationType, errors);
+    NodeManager.validateTitle(title, errors);
+    NodeManager.validateContent(content, errors);
+    NodeManager.validateURL(dataType, content, errors);
+    const parentIdValidated = await this.validateParent(parentId, errors);
 
     if (errors.length) {
       throw new ValidationError(errors);
@@ -274,6 +326,7 @@ class NodeManager {
       createdAt: now,
       updatedAt: now,
       createdById,
+      updatedById: createdById,
       parentId: parentIdValidated,
       childrenIds: []
     };
