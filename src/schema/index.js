@@ -12,7 +12,7 @@ const typeDefs = `
     title: String!
     content: String!
     parent: Node @relation(name: "NodeParent")
-    children: [Node!] @relation(name: "NodeChildren")
+    children: [Node!]! @relation(name: "NodeChildren")
     createdBy: User! @relation(name: "UserCreatedNodes")
     updatedBy: User! @relation(name: "UserUpdatedNodes")
     createdAt: DateTime!
@@ -32,6 +32,7 @@ const typeDefs = `
   input NodeFilter {
     OR: [NodeFilter!]
     id: ID
+    id_in: [ID!]
     parent: ID
     children_contains: [ID!]
     createdBy: ID

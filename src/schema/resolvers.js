@@ -52,6 +52,7 @@ module.exports = {
       pubSub.publish("Node", {
         Node: { mutation: "UPDATED", node: updatedNode }
       });
+      return updatedNode;
     }
   },
   Subscription: {
@@ -69,6 +70,14 @@ module.exports = {
     parent: async ({ parentId }, _data, { Nodes }) => {
       const parentNodes = await Nodes.allNodes({ id: parentId });
       return (parentNodes && parentNodes.length && parentNodes[0]) || null;
+    },
+    children: async({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
+      return await Nodes.allNodes(
+        { ...filter, parent: _id },
+        orderBy,
+        skip,
+        first
+      );
     }
   },
   User: {

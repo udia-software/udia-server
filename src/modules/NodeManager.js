@@ -14,7 +14,7 @@ class NodeManager {
   }
 
   /**
-   * Auth Validation, check if the user is authenticated
+   * Auth Validation, check if the user is authenticated (existance of _id)
    * @param {*} createdBy - Mongo Document containing user
    * @param {Array} errors - Array of errors
    */
@@ -95,13 +95,54 @@ class NodeManager {
     if (dataType === "URL") {
       try {
         new URL(content);
-      }
-      catch (_) {
+      } catch (_) {
         errors.push({
           key: "content",
           message: "Content must be a valid url."
         });
       }
+    }
+  }
+
+  /**
+   * Update User validation, currently only check that ids match
+   * @param {*} toUpdateNode - Mongo Document representation of node
+   * @param {ObjectID} updatedById - Update User's Mongo Object ID
+   * @param {Array} errors - Array of errors
+   */
+  static validateUpdateUser(toUpdateNode, updatedById, errors) {
+    if (!updatedById.equals(toUpdateNode.createdById)) {
+      errors.push({
+        key: "updatedBy",
+        message: "Can only update own nodes."
+      });
+    }
+  }
+
+  /**
+   * Update changes validation, check if any changes to original node exist
+   * @param {*} toUpdateNode - Mongo Document, original node to update
+   * @param {string?} dataType - new dataType value
+   * @param {string?} title - new title value
+   * @param {string?} content - new content value
+   * @param {Array} errors - Array of errors
+   */
+  static validateUpdateDifferent(
+    toUpdateNode,
+    dataType,
+    title,
+    content,
+    errors
+  ) {
+    if (
+      (dataType === null || dataType === toUpdateNode.dataType) &&
+      (title === null || title === toUpdateNode.title) &&
+      (content === null || content === toUpdateNode.content)
+    ) {
+      errors.push({
+        key: "_id",
+        message: "Cannot update node with no changes."
+      });
     }
   }
 
@@ -115,8 +156,7 @@ class NodeManager {
     if (parentId) {
       try {
         parentIdValidated = new ObjectID(parentId);
-      }
-      catch (_err) {
+      } catch (_err) {
         errors.push({
           key: "parentId",
           message: "ParentId must be a valid Mongo ObjectID."
@@ -157,14 +197,112 @@ class NodeManager {
   }
 
   /**
+   * Function for creating a single node
+   * @param {*} createdBy - Mongo Document, user who created the node.
+   * @param {String} dataType - Type of node ["TEXT", "URL"]
+   * @param {String} relationType - Relation of node ["POST", "COMMENT", "UPDATE"]
+   * @param {String} title - String, title of node
+   * @param {String} content - String, content of node
+   * @param {String?} parentId - MongoID of parent node
+   */
+  async createNode(
+    createdBy,
+    dataType,
+    relationType,
+    title,
+    content,
+    parentId
+  ) {
+    const errors = [];
+    const createdById = NodeManager.validateAuthenticated(createdBy, errors);
+    NodeManager.validateDataType(dataType, errors);
+    NodeManager.validateRelationType(relationType, errors);
+    NodeManager.validateTitle(title, errors);
+    NodeManager.validateContent(content, errors);
+    NodeManager.validateURL(dataType, content, errors);
+    const parentIdValidated = await this.validateParent(parentId, errors);
+
+    if (errors.length) {
+      throw new ValidationError(errors);
+    }
+
+    const now = new Date();
+    const newNode = {
+      dataType,
+      relationType,
+      title,
+      content,
+      createdAt: now,
+      updatedAt: now,
+      createdById,
+      updatedById: createdById,
+      parentId: parentIdValidated,
+      childrenIds: []
+    };
+    const response = await this.collection.insert(newNode);
+    const newNodeId = response.insertedIds[0];
+    if (parentIdValidated) {
+      // update the parent id with the child
+      await this.collection.update(
+        { _id: parentIdValidated },
+        { $push: { childrenIds: new ObjectID(newNodeId) } }
+      );
+    }
+    return Object.assign({ _id: newNodeId }, newNode);
+  }
+
+  /**
+   * Function for updating a single node
+   * @param {String} id - Mongo Object ID of node to update
+   * @param {*} updatedBy - Mongo Document, user who created the node.
+   * @param {String?} dataType - Type of node ["TEXT", "URL"]
+   * @param {String?} title - String, title of node
+   * @param {String?} content - String, content of node
+   */
+  async updateNode(id, updatedBy, dataType, title, content) {
+    const errors = [];
+    const updatedById = NodeManager.validateAuthenticated(updatedBy, errors);
+    const toUpdateNode = await this._getNodeById(id, true);
+    NodeManager.validateUpdateUser(toUpdateNode, updatedById, errors);
+
+    NodeManager.validateDataType(dataType || toUpdateNode.dataType, errors);
+    NodeManager.validateTitle(title || toUpdateNode.title, errors);
+    NodeManager.validateContent(content || toUpdateNode.content, errors);
+    NodeManager.validateURL(
+      dataType || toUpdateNode.dataType,
+      content || toUpdateNode.content,
+      errors
+    );
+    NodeManager.validateUpdateDifferent(
+      toUpdateNode,
+      dataType,
+      title,
+      content,
+      errors
+    );
+
+    if (errors.length) {
+      throw new ValidationError(errors);
+    }
+
+    const now = new Date();
+    const response = await this.collection.update(
+      { _id: new ObjectID(id) },
+      { $set: { updatedById, updatedAt: now, dataType, title, content } }
+    );
+    return await this._getNodeById(id, true);
+  }
+
+  /**
    * Recursively build the filter tree. Outputs a mongodb compatible query
    * @param {NodeFilter} inputFilter - NodeFilter object (refer to schema)
    */
   static _buildFilters({
     OR,
     id,
+    id_in, // id field is in this array
     parent,
-    children_contains,
+    children_contains, // node's childrenIds has all of these ids
     createdBy,
     updatedBy,
     title_contains,
@@ -187,6 +325,16 @@ class NodeManager {
       } catch (_err) {
         outputFilter._id = new ObjectID();
       }
+    } else if (id_in !== undefined) {
+      outputFilter._id = {
+        $in: id_in.map(lookupId => {
+          try {
+            return new ObjectID(lookupId);
+          } catch (_err) {
+            return new ObjectID();
+          }
+        })
+      };
     }
 
     if (parent === null) {
@@ -285,61 +433,6 @@ class NodeManager {
       filters = filters.concat(NodeManager._buildFilters(OR[i]));
     }
     return filters;
-  }
-
-  /**
-   * Function for creating a single node
-   * @param {*} createdBy - Mongo Document, user who created the node. Should have _id prop
-   * @param {String} dataType - Type of node ["TEXT", "URL"]
-   * @param {String} relationType - Relation of node ["POST", "COMMENT", "UPDATE"]
-   * @param {String} title - String, title of node
-   * @param {String} content - String, content of node
-   * @param {String?} parentId - MongoID of parent node
-   */
-  async createNode(
-    createdBy,
-    dataType,
-    relationType,
-    title,
-    content,
-    parentId
-  ) {
-    const errors = [];
-    const createdById = NodeManager.validateAuthenticated(createdBy, errors);
-    NodeManager.validateDataType(dataType, errors);
-    NodeManager.validateRelationType(relationType, errors);
-    NodeManager.validateTitle(title, errors);
-    NodeManager.validateContent(content, errors);
-    NodeManager.validateURL(dataType, content, errors);
-    const parentIdValidated = await this.validateParent(parentId, errors);
-
-    if (errors.length) {
-      throw new ValidationError(errors);
-    }
-
-    const now = new Date();
-    const newNode = {
-      dataType,
-      relationType,
-      title,
-      content,
-      createdAt: now,
-      updatedAt: now,
-      createdById,
-      updatedById: createdById,
-      parentId: parentIdValidated,
-      childrenIds: []
-    };
-    const response = await this.collection.insert(newNode);
-    const newNodeId = response.insertedIds[0];
-    if (parentIdValidated) {
-      // update the parent id with the child
-      await this.collection.update(
-        { _id: parentIdValidated },
-        { $push: { childrenIds: new ObjectID(newNodeId) } }
-      );
-    }
-    return Object.assign({ _id: newNodeId }, newNode);
   }
 
   /**

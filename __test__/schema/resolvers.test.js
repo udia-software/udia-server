@@ -49,9 +49,11 @@ describe("Resolvers", () => {
           content
           parent {
             _id
+            title
           }
           children {
             _id
+            title
           }
           createdBy {
             _id
@@ -66,28 +68,29 @@ describe("Resolvers", () => {
       }`;
 
       let data = { query };
-      const noNodesResponse = await client.post("/graphql", data)
-        .catch(err => console.log(err.response.data));
+      const noNodesResponse = await client.post("/graphql", data);
       expect(noNodesResponse.status).toBe(200);
       expect(noNodesResponse.data).toEqual({ data: { allNodes: [] } });
 
       await testHelper.getDatabase();
       const createdBy = await testHelper.createTestUser({});
       const node = await testHelper.generateTestNode({
-        createdBy
+        createdBy,
+        title: "Parent Node"
       });
       const commentNode = await testHelper.generateTestNode({
         createdBy,
         relationType: "COMMENT",
-        parentId: node._id + ""
+        parentId: node._id + "",
+        title: "Comment Node"
       });
 
-      const queryOutput = {
+      const commentQueryOutput = {
         data: {
           allNodes: [
             {
               _id: "" + commentNode._id,
-              children: null,
+              children: [],
               content: "Test Node Content",
               createdBy: {
                 _id: "" + createdBy._id,
@@ -109,9 +112,9 @@ describe("Resolvers", () => {
                 ]
               },
               dataType: "TEXT",
-              parent: { _id: "" + node._id },
+              parent: { _id: "" + node._id, title: "Parent Node" },
               relationType: "COMMENT",
-              title: "Test Node"
+              title: "Comment Node"
             }
           ]
         }
@@ -130,13 +133,13 @@ describe("Resolvers", () => {
 
       const queryResponse = await client.post("/graphql", data);
       expect(queryResponse.status).toBe(200);
-      expect(queryResponse.data).toEqual(queryOutput);
+      expect(queryResponse.data).toEqual(commentQueryOutput);
 
       const inlineQuery = `
       query allNodes {
         allNodes(
           filter: { 
-            parent: "${node._id}",
+            id: "${node._id}"
             createdAt_lte: ${Date.now()},
             updatedAt_lte: "${new Date(Date.now() + 1000).toString()}",
           }
@@ -148,9 +151,11 @@ describe("Resolvers", () => {
           content
           parent {
             _id
+            title
           }
           children {
             _id
+            title
           }
           createdBy {
             _id
@@ -163,10 +168,51 @@ describe("Resolvers", () => {
           }
         }
       }`;
+
+      const inlineQueryOutput = {
+        data: {
+          allNodes: [
+            {
+              _id: "" + node._id,
+              children: [
+                {
+                  _id: "" + commentNode._id,
+                  title: "Comment Node"
+                }
+              ],
+              content: "Test Node Content",
+              createdBy: {
+                _id: "" + createdBy._id,
+                createdNodes: [
+                  {
+                    _id: "" + node._id
+                  },
+                  {
+                    _id: "" + commentNode._id
+                  }
+                ],
+                updatedNodes: [
+                  {
+                    _id: "" + node._id
+                  },
+                  {
+                    _id: "" + commentNode._id
+                  }
+                ]
+              },
+              dataType: "TEXT",
+              parent: null,
+              relationType: "POST",
+              title: "Parent Node"
+            }
+          ]
+        }
+      };
+
       data = { query: inlineQuery };
       const inlineQueryResponse = await client.post("/graphql", data);
       expect(inlineQueryResponse.status).toBe(200);
-      expect(inlineQueryResponse.data).toEqual(queryOutput);
+      expect(inlineQueryResponse.data).toEqual(inlineQueryOutput);
 
       data = { query, variables: { filter: 1 } };
       client.post("/graphql", data).catch(err => {
@@ -183,6 +229,9 @@ describe("Resolvers", () => {
           _id
           username
           createdNodes {
+            _id
+          }
+          updatedNodes {
             _id
           }
           email
@@ -208,6 +257,7 @@ describe("Resolvers", () => {
             _id: "" + resolverUser._id,
             email: resolverUser.email,
             createdNodes: [{ _id: "" + testNode._id }],
+            updatedNodes: [{ _id: "" + testNode._id }],
             username: resolverUser.username
           }
         }
@@ -290,7 +340,7 @@ describe("Resolvers", () => {
       expect(userResponse.data).toEqual({
         data: {
           createNode: {
-            children: null,
+            children: [],
             content: "Test Create Node Resolver Content String!",
             createdBy: { _id: "" + resolverUser._id },
             updatedBy: { _id: "" + resolverUser._id },
@@ -301,6 +351,86 @@ describe("Resolvers", () => {
           }
         }
       });
+      done();
+    });
+
+    it("should validly update a node", async done => {
+      const user = await testHelper.createTestUser({
+        username: "creator",
+        email: "creator@test.com"
+      });
+      const node = await testHelper.generateTestNode({
+        createdBy: user,
+        title: "Newly Created Node",
+        content: "This is my new node"
+      });
+      const jwt = await testHelper.getJWT({ email: "creator@test.com" });
+      const query = `
+      mutation updateNode(
+        $id: ID!,
+        $dataType: NodeDataType,
+        $title: String
+        $content: String
+      ) {
+        updateNode(
+          id: $id,
+          dataType: $dataType,
+          title: $title,
+          content: $content
+        ) {
+          _id
+          dataType
+          relationType
+          title
+          content
+          parent {
+            _id
+          }
+          children {
+            _id
+          }
+          createdBy {
+            _id
+          }
+          updatedBy {
+            _id
+          }
+          createdAt
+          updatedAt
+        }
+      }`;
+      const data = {
+        query,
+        variables: {
+          id: node._id,
+          dataType: "URL",
+          title: "Now it's a URL",
+          content: "https://www.udia.ca"
+        }
+      };
+      const response = await client.post("/graphql", data, {
+        headers: { authorization: jwt }
+      });
+      expect(response.status).toBe(200);
+      expect(response.data.data.updateNode._id).toEqual("" + node._id);
+      expect(response.data.data.updateNode.children).toEqual([]);
+      expect(response.data.data.updateNode.content).toEqual(
+        "https://www.udia.ca"
+      );
+      expect(response.data.data.updateNode.createdAt).toBeDefined();
+      expect(response.data.data.updateNode.updatedAt).toBeDefined();
+      expect(response.data.data.updateNode.createdAt).toBeLessThan(
+        response.data.data.updateNode.updatedAt
+      );
+      expect(response.data.data.updateNode.createdBy).toEqual({
+        _id: "" + user._id
+      });
+      expect(response.data.data.updateNode.updatedBy).toEqual({
+        _id: "" + user._id
+      });
+      expect(response.data.data.updateNode.dataType).toEqual("URL");
+      expect(response.data.data.updateNode.parent).toBeNull();
+      expect(response.data.data.updateNode.relationType).toEqual("POST");
       done();
     });
 
