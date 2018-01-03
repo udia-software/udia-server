@@ -149,7 +149,7 @@ describe("Resolvers", () => {
         }
       }`;
       data = { query: inlineQuery };
-      const inlineQueryResponse = await client.post("/graphql", data).catch(err => console.log(err.response.data));
+      const inlineQueryResponse = await client.post("/graphql", data);
       expect(inlineQueryResponse.status).toBe(200);
       expect(inlineQueryResponse.data).toEqual(queryOutput);
 

@@ -80,14 +80,11 @@ module.exports = {
       return value.getTime(); // value sent to the client
     },
     parseLiteral(ast) {
-      switch (ast.kind) {
-        case Kind.INT:
-          return new Date(parseInt(ast.value, 10));
-        case Kind.STRING:
-          return new Date(ast.value);
-        default:
-          // should never get here
-          return null;
+      if (ast.kind === Kind.INT) {
+        return new Date(parseInt(ast.value, 10));
+      } else {
+        // default just try to do naive cast
+        return new Date(ast.value);
       }
     }
   }

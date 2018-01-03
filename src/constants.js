@@ -1,3 +1,7 @@
+"use strict";
+
+// coverage don't care about development environment
+/* istanbul ignore next */
 const NODE_ENV = process.env.NODE_ENV || "development";
 const JWT_SECRET = process.env.JWT_SECRET || "UDIA Development JWT Secret Key";
 const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/udia";
