@@ -61,6 +61,7 @@ describe("Resolvers", () => {
           }
         }
       }`;
+
       let data = { query };
       const noNodesResponse = await client.post("/graphql", data);
       expect(noNodesResponse.status).toBe(200);
@@ -77,20 +78,7 @@ describe("Resolvers", () => {
         parentId: node._id + ""
       });
 
-      data = {
-        query,
-        variables: {
-          filter: {
-            parent: node._id + "",
-            createdAt_lte: new Date(),
-            updatedAt_lte: Date.now() // also handles milisecond timestamps
-          }
-        }
-      };
-
-      const queryResponse = await client.post("/graphql", data);
-      expect(queryResponse.status).toBe(200);
-      expect(queryResponse.data).toEqual({
+      const queryOutput = {
         data: {
           allNodes: [
             {
@@ -115,7 +103,55 @@ describe("Resolvers", () => {
             }
           ]
         }
-      });
+      };
+
+      data = {
+        query,
+        variables: {
+          filter: {
+            parent: node._id + "",
+            createdAt_lte: new Date(),
+            updatedAt_lte: Date.now() // also handles milisecond timestamps
+          }
+        }
+      };
+
+      const queryResponse = await client.post("/graphql", data);
+      expect(queryResponse.status).toBe(200);
+      expect(queryResponse.data).toEqual(queryOutput);
+
+      const inlineQuery = `
+      query allNodes {
+        allNodes(
+          filter: { 
+            parent: "${node._id}",
+            createdAt_lte: ${Date.now()},
+            updatedAt_lte: "${new Date(Date.now() + 1000).toString()}",
+          }
+        ) {
+          _id
+          dataType
+          relationType
+          title
+          content
+          parent {
+            _id
+          }
+          children {
+            _id
+          }
+          createdBy {
+            _id
+            nodes {
+              _id
+            }
+          }
+        }
+      }`;
+      data = { query: inlineQuery };
+      const inlineQueryResponse = await client.post("/graphql", data).catch(err => console.log(err.response.data));
+      expect(inlineQueryResponse.status).toBe(200);
+      expect(inlineQueryResponse.data).toEqual(queryOutput);
 
       data = { query, variables: { filter: 1 } };
       client.post("/graphql", data).catch(err => {

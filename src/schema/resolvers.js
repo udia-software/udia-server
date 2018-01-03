@@ -48,8 +48,8 @@ module.exports = {
       return await Users.getUserById(createdById);
     },
     parent: async ({ parentId }, _data, { Nodes }) => {
-      const parentNodes = await Nodes.allNodes({id: parentId});
-      return parentNodes && parentNodes.length && parentNodes[0] || null;
+      const parentNodes = await Nodes.allNodes({ id: parentId });
+      return (parentNodes && parentNodes.length && parentNodes[0]) || null;
     }
   },
   User: {
@@ -80,10 +80,15 @@ module.exports = {
       return value.getTime(); // value sent to the client
     },
     parseLiteral(ast) {
-      if (ast.kind === Kind.INT) {
-        return parseInt(ast.value, 10); // ast value is always in string format
+      switch (ast.kind) {
+        case Kind.INT:
+          return new Date(parseInt(ast.value, 10));
+        case Kind.STRING:
+          return new Date(ast.value);
+        default:
+          // should never get here
+          return null;
       }
-      return null;
     }
   }
 };
