@@ -1,14 +1,21 @@
 language: node_js
 node_js:
-  - "node"
-  - "lts/*"
+- node
+- lts/*
 cache:
   directories:
-    - "node_modules"
+  - node_modules
 services:
-  - mongodb
+- mongodb
+before_install:
+- npm install -g greenkeeper-lockfile@1
 before_script:
-  - sleep 5
-  - mongo mydb_test --eval 'db.createUser({user:"travis",pwd:"test",roles:["readWrite"]});'
+- greenkeeper-lockfile-update
+- sleep 5
+- mongo mydb_test --eval 'db.createUser({user:"travis",pwd:"test",roles:["readWrite"]});'
 after_script:
-  - cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js
+- greenkeeper-lockfile-upload
+- cat ./coverage/lcov.info | ./node_modules/coveralls/bin/coveralls.js
+env:
+  global:
+    secure: F2PA2Efv85PoA6ze+Y7E81+T0mnm4rToWfLt5YOVvISWAuXzURyvhcjmkTnYgckAeXh4zkM4gww5jdxVFT77tPn7TDJF33s+/cgQOi5E4G3pa63tsegyp2K9CkbmVTL2KLqV7zexjz3SZjfMkH4reKNrbP0DEBXwIzpz0bXMdXMssUYdH5YfyemYE3Sxm/gCXzsdDO0VLdAKkEiAe4iVZNpSMaf9s32wszrowN237XmZAEfQy9AsVjd1mn1jn7px+Pwgll2c78igDV7nO+W5Yvbetih8tJf2vd2LOTIkIgSfkhzpssvbCwb3PuLDyTQtl7FY69a1CfTN13CnAsRZ2GQyIA473zIeJpGAZE8O6pJP7rwqHrbAC9bd8/wLt3eARFzgmVy5C8m4xgZmPWWYIsOj9dZS2lBZGwfekwlukYOYTyRTLszZRGgxQUsyNcuNs9NPLR8Dc1SyEw0icWs8s/1bfOL4j2VpSoU1zv7/V5s8g36MTrkCoWt/mc1DBfO20f6seVJOhjVZwgAh64fgjXrzlrtEEDMP7DO5GIFxQueJR/eISdGkOXo5jBLLBXRjNyfzRkYoBHQ80sHtjJmp16r/bl8M2taVu6TaB8v9yxbllraYieeExwjDRhv3TnrEgx5Nbp9x4N2M/Bnzxw3pkfQcS9ToOQ6+sCzs5DoWvCE=
