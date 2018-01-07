@@ -2,6 +2,7 @@
 
 const auth = require("../src/modules/Auth");
 const connectMongo = require("../src/connectMongo");
+const { NODE_ENV } = require("../src/constants");
 
 let _mongo = null;
 
@@ -28,6 +29,7 @@ async function initializeTestState(clearDatabase = true) {
  * @param {boolean} closeDatabase - Close the db connection (default false)
  */
 async function tearDownTestState(closeDatabase = false) {
+  const _mongo = await initializeTestState(false);
   const db = await getDatabase();
   const collections = await db.listCollections().toArray();
   for (let collection in collections) {
@@ -38,7 +40,7 @@ async function tearDownTestState(closeDatabase = false) {
     }
   }
   if (closeDatabase) {
-    await db.close();
+    await _mongo.close();
   }
 }
 
@@ -46,7 +48,11 @@ async function tearDownTestState(closeDatabase = false) {
  * Return the current test database instance
  */
 async function getDatabase() {
-  return await initializeTestState(false);
+  const _mongo = await initializeTestState(false);
+  if (NODE_ENV === "test") {
+    return _mongo.db("udiatest");
+  }
+  return _mongo.db("udia");
 }
 
 async function createTestUser({

@@ -16,8 +16,8 @@ const NodeManager = require("./modules/NodeManager");
 const UserManager = require("./modules/UserManager");
 
 const start = async () => {
-  const db = await connectMongo().catch(
-    // coverage don't care about db connection errors.
+  const _mongo = await connectMongo().catch(
+    // coverage don't care about mongo client connection errors.
     /* istanbul ignore next */
     err => {
       // eslint-disable-next-line no-console
@@ -25,6 +25,14 @@ const start = async () => {
       process.exit(1);
     }
   );
+  let db = null;
+  if (NODE_ENV === "test") {
+    db = _mongo.db("udiatest");
+  } else {
+    // coverage don't care about non test db.
+    /* istanbul ignore next */
+    db = _mongo.db("udia");
+  }
   const app = express();
 
   const buildOptions = async req => {
@@ -89,7 +97,7 @@ const start = async () => {
     if (subscriptionServer) {
       await subscriptionServer.close();
     }
-    await db.close();
+    await _mongo.close();
   });
 
   return server;
