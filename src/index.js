@@ -26,11 +26,11 @@ const start = async () => {
     }
   );
   let db = null;
+  // coverage don't care env conditional db.
+  /* istanbul ignore next */
   if (NODE_ENV === "test") {
     db = _mongo.db("udiatest");
   } else {
-    // coverage don't care about non test db.
-    /* istanbul ignore next */
     db = _mongo.db("udia");
   }
   const app = express();

@@ -117,7 +117,9 @@ class UserManager {
    * @param {string} id - string representation of mongo object ID
    */
   async getUserById(id) {
-    return await this.userLoader.load(id);
+    if (id) {
+      return await this.userLoader.load(id);
+    }
   }
 
   /**

@@ -9,17 +9,18 @@ const typeDefs = `
     _id: ID! @isUnique
     dataType: NodeDataType!
     relationType: NodeRelationType!
-    title: String!
-    content: String!
+    title: String
+    content: String
     parent: Node @relation(name: "NodeParent")
     children: [Node!]! @relation(name: "NodeChildren")
-    createdBy: User! @relation(name: "UserCreatedNodes")
-    updatedBy: User! @relation(name: "UserUpdatedNodes")
-    createdAt: DateTime!
-    updatedAt: DateTime!
+    createdBy: User @relation(name: "UserCreatedNodes")
+    updatedBy: User @relation(name: "UserUpdatedNodes")
+    createdAt: DateTime
+    updatedAt: DateTime
   }
 
   enum NodeDataType {
+    DELETED
     TEXT
     URL
   }
@@ -105,6 +106,7 @@ const typeDefs = `
       title: String,
       content: String
     ): Node!
+    deleteNode(id: ID!): Node!
     createUser(
       email: String!
       username: String!,
@@ -143,7 +145,8 @@ const typeDefs = `
   }
   
   enum ModelMutationType {
-    CREATED
+    CREATED,
+    UPDATED
   }
 
   scalar DateTime

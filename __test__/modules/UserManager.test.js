@@ -5,14 +5,24 @@ const UserManager = require("../../src/modules/UserManager");
 const { ValidationError } = require("../../src/modules/Errors");
 const testHelper = require("../testhelper");
 
-beforeEach(async done => {
-  await testHelper.initializeTestState();
-  return await done();
+let db = null;
+let userManager = null;
+
+beforeAll(async done => {
+  await testHelper.initializeTestState(true);
+  db = await testHelper.getDatabase();
+  userManager = new UserManager(db.collection("users"));
+  done();
+});
+
+afterEach(async done => {
+  await testHelper.tearDownTestState();
+  done();
 });
 
 afterAll(async done => {
   await testHelper.tearDownTestState(true);
-  return await done();
+  done();
 });
 
 describe("UserManager Module", () => {
@@ -21,8 +31,6 @@ describe("UserManager Module", () => {
       const username = "Test_User";
       const rawPassword = "Secret123";
       const email = "test@test.com";
-      const db = await testHelper.getDatabase();
-      const userManager = new UserManager(db.collection("users"));
 
       const newUserData = await userManager.createUser(
         username,
@@ -40,20 +48,11 @@ describe("UserManager Module", () => {
       const username = "UN_Collision";
       const rawPassword = "Secret234";
       const email = "test@test.com";
-      const db = await testHelper.getDatabase();
-      const userManager = new UserManager(db.collection("users"));
 
       await userManager.createUser(username, email, rawPassword);
       await expect(
         userManager.createUser(username, email + "1", rawPassword)
-      ).rejects.toEqual(
-        new ValidationError([
-          {
-            key: "username",
-            message: "Username is already in use by another user."
-          }
-        ])
-      );
+      ).rejects.toEqual(new ValidationError());
       done();
     });
 
@@ -66,14 +65,7 @@ describe("UserManager Module", () => {
 
       await expect(
         userManager.createUser(username, email, rawPassword)
-      ).rejects.toEqual(
-        new ValidationError([
-          {
-            key: "username",
-            message: "Username cannot be empty."
-          }
-        ])
-      );
+      ).rejects.toEqual(new ValidationError());
       done();
     });
 
@@ -81,22 +73,10 @@ describe("UserManager Module", () => {
       const username = "Xx-invalid-xX1234567890";
       const rawPassword = "Secret234";
       const email = "test@test.com";
-      const db = await testHelper.getDatabase();
-      const userManager = new UserManager(db.collection("users"));
 
       await expect(
         userManager.createUser(username, email, rawPassword)
-      ).rejects.toEqual(
-        new ValidationError([
-          {
-            key: "username",
-            message: [
-              "Username must be alphanumeric with underscores.",
-              "Username cannot be over 15 characters long."
-            ]
-          }
-        ])
-      );
+      ).rejects.toEqual(new ValidationError());
       done();
     });
 
@@ -104,20 +84,11 @@ describe("UserManager Module", () => {
       const username = "Email_Col";
       const rawPassword = "Secret234";
       const email = "test@test.com";
-      const db = await testHelper.getDatabase();
-      const userManager = new UserManager(db.collection("users"));
 
       await userManager.createUser(username, email, rawPassword);
       await expect(
         userManager.createUser(username + "1", email, rawPassword)
-      ).rejects.toEqual(
-        new ValidationError([
-          {
-            key: "email",
-            message: "Email is already in use by another user."
-          }
-        ])
-      );
+      ).rejects.toEqual(new ValidationError());
       done();
     });
 
@@ -125,19 +96,10 @@ describe("UserManager Module", () => {
       const username = "No_Email_User";
       const rawPassword = "Secret234";
       const email = "";
-      const db = await testHelper.getDatabase();
-      const userManager = new UserManager(db.collection("users"));
 
       await expect(
         userManager.createUser(username, email, rawPassword)
-      ).rejects.toEqual(
-        new ValidationError([
-          {
-            key: "email",
-            message: "Email cannot be empty."
-          }
-        ])
-      );
+      ).rejects.toEqual(new ValidationError());
       done();
     });
 
@@ -145,19 +107,10 @@ describe("UserManager Module", () => {
       const username = "No_Email_User";
       const rawPassword = "Secret234";
       const email = "thisisnotanemail";
-      const db = await testHelper.getDatabase();
-      const userManager = new UserManager(db.collection("users"));
 
       await expect(
         userManager.createUser(username, email, rawPassword)
-      ).rejects.toEqual(
-        new ValidationError([
-          {
-            key: "email",
-            message: "Email must be in the form quantifier@domain.tld."
-          }
-        ])
-      );
+      ).rejects.toEqual(new ValidationError());
       done();
     });
 
@@ -165,27 +118,16 @@ describe("UserManager Module", () => {
       const username = "No_Password_User";
       const rawPassword = "";
       const email = "test@test.com";
-      const db = await testHelper.getDatabase();
-      const userManager = new UserManager(db.collection("users"));
 
       await expect(
         userManager.createUser(username, email, rawPassword)
-      ).rejects.toEqual(
-        new ValidationError([
-          {
-            key: "password",
-            message: "Password cannot be empty."
-          }
-        ])
-      );
+      ).rejects.toEqual(new ValidationError());
       done();
     });
   });
 
   describe("Query", () => {
     it("should dataloader get a user by ID", async done => {
-      const db = await testHelper.getDatabase();
-      const userManager = new UserManager(db.collection("users"));
       const user = await testHelper.createTestUser({});
       const returnedUser = await userManager.getUserById(user._id);
       expect(returnedUser).toEqual(user);
@@ -195,8 +137,6 @@ describe("UserManager Module", () => {
     });
 
     it("should get a user by email", async done => {
-      const db = await testHelper.getDatabase();
-      const userManager = new UserManager(db.collection("users"));
       const user = await testHelper.createTestUser({ email: "123@test.com" });
       const returnedUser = await userManager.getUserByEmail("123@test.com");
       expect(returnedUser).toEqual(user);
