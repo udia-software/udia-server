@@ -110,8 +110,8 @@ class NodeManager {
    * @param {ObjectID} updatedById - Update User's Mongo Object ID
    * @param {Array} errors - Array of errors
    */
-  static validateUpdateUser(toUpdateNode, updatedById, errors) {
-    if (!updatedById.equals(toUpdateNode.createdById)) {
+  static validateNodeModificationUser(toUpdateNode, updatedById, errors) {
+    if (!updatedById.equals((toUpdateNode || {}).createdById)) {
       errors.push({
         key: "updatedBy",
         message: "Can only update own nodes."
@@ -263,18 +263,24 @@ class NodeManager {
     const errors = [];
     const updatedById = NodeManager.validateAuthenticated(updatedBy, errors);
     const toUpdateNode = await this._getNodeById(id, true);
-    NodeManager.validateUpdateUser(toUpdateNode, updatedById, errors);
+    NodeManager.validateNodeModificationUser(toUpdateNode, updatedById, errors);
 
-    NodeManager.validateDataType(dataType || toUpdateNode.dataType, errors);
-    NodeManager.validateTitle(title || toUpdateNode.title, errors);
-    NodeManager.validateContent(content || toUpdateNode.content, errors);
+    NodeManager.validateDataType(
+      dataType || (toUpdateNode || {}).dataType,
+      errors
+    );
+    NodeManager.validateTitle(title || (toUpdateNode || {}).title, errors);
+    NodeManager.validateContent(
+      content || (toUpdateNode || {}).content,
+      errors
+    );
     NodeManager.validateURL(
-      dataType || toUpdateNode.dataType,
-      content || toUpdateNode.content,
+      dataType || (toUpdateNode || {}).dataType,
+      content || (toUpdateNode || {}).content,
       errors
     );
     NodeManager.validateUpdateDifferent(
-      toUpdateNode,
+      (toUpdateNode || {}),
       dataType,
       title,
       content,
@@ -286,9 +292,41 @@ class NodeManager {
     }
 
     const now = new Date();
-    const response = await this.collection.update(
+    await this.collection.update(
       { _id: new ObjectID(id) },
       { $set: { updatedById, updatedAt: now, dataType, title, content } }
+    );
+    return await this._getNodeById(id, true);
+  }
+
+  /**
+   * Function for deleting a single node
+   * @param {String} id - Mongo Object ID of node to delete
+   * @param {*} deletedBy - Mongo Document, user who deleted the node.
+   */
+  async deleteNode(id, deletedBy) {
+    const errors = [];
+    const updatedById = NodeManager.validateAuthenticated(deletedBy, errors);
+    const toDeleteNode = await this._getNodeById(id, true);
+    NodeManager.validateNodeModificationUser(toDeleteNode, updatedById, errors);
+
+    if (errors.length) {
+      throw new ValidationError(errors);
+    }
+    // don't actually do the delete
+    // just set the title, content, createdBy, updatedBy, updatedAt, createdAt fields to be null.
+    await this.collection.update(
+      { _id: new ObjectID(id) },
+      {
+        $set: {
+          createdById: null,
+          updatedById: null,
+          createdAt: null,
+          updatedAt: null,
+          title: null,
+          content: null
+        }
+      }
     );
     return await this._getNodeById(id, true);
   }

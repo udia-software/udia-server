@@ -1,8 +1,9 @@
 # Udia Server
 
-[![Build Status](https://travis-ci.org/udia-software/udia-server.svg?branch=master)](https://travis-ci.org/udia-software/udia-server)
-[![Coverage Status](https://coveralls.io/repos/github/udia-software/udia-server/badge.svg?branch=master)](https://coveralls.io/github/udia-software/udia-server?branch=master)
-[![Greenkeeper badge](https://badges.greenkeeper.io/udia-software/udia-server.svg)](https://greenkeeper.io/)
+[![Build Status](https://img.shields.io/travis/udia-software/udia-server.svg)](https://travis-ci.org/udia-software/udia-server)
+[![Coverage Status](https://img.shields.io/coveralls/github/udia-software/udia-server.svg)](https://coveralls.io/github/udia-software/udia-server?branch=master)
+[![David](https://img.shields.io/david/udia-software/udia-server.svg)](https://david-dm.org/udia-software/udia-server)
+[![David](https://img.shields.io/david/dev/udia-software/udia-server.svg)](https://david-dm.org/udia-software/udia-server?type=dev)
 
 * Note: This is not ready for production.
 
@@ -18,7 +19,7 @@ Set these, or use the defaults.
 | Environment Variable Name | Default Value                     | Description                       |
 |---------------------------|-----------------------------------|-----------------------------------|
 | `NODE_ENV`                | `development`                     | `development` `test` `production` |
-| `MONGODB_URI`             | `mongodb://localhost:27017/udia`  | Connection string for MongoDB     |
+| `MONGODB_URI`             | `mongodb://localhost:27017`       | Connection string for MongoDB     |
 | `JWT_SECRET`              | `UDIA Development JWT Secret Key` | JWT Secret Key                    |
 | `PORT`                    | `3000`                            | Port for serving http server      |
 | `TEST_JWT`                | ` `                               | JWT to use for graphiql in dev    |

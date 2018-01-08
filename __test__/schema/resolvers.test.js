@@ -434,6 +434,66 @@ describe("Resolvers", () => {
       done();
     });
 
+    it("should validly delete a node", async done => {
+      const user = await testHelper.createTestUser({
+        username: "creator",
+        email: "creator@test.com"
+      });
+      const node = await testHelper.generateTestNode({
+        createdBy: user,
+        title: "Newly Created Node",
+        content: "This is my new node"
+      });
+      const jwt = await testHelper.getJWT({ email: "creator@test.com" });
+      const query = `
+      mutation deleteNode($id: ID!) {
+        deleteNode(id: $id) {
+          _id
+          dataType
+          relationType
+          title
+          content
+          parent {
+            _id
+          }
+          children {
+            _id
+          }
+          createdBy {
+            _id
+          }
+          updatedBy {
+            _id
+          }
+          createdAt
+          updatedAt
+        }
+      }`;
+      const data = { query, variables: { id: node._id } };
+      const response = await client.post("/graphql", data, {
+        headers: { authorization: jwt }
+      });
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({
+        data: {
+          deleteNode: {
+            _id: "" + node._id,
+            children: [],
+            content: null,
+            createdAt: null,
+            createdBy: null,
+            dataType: "TEXT",
+            parent: null,
+            relationType: "POST",
+            title: null,
+            updatedAt: null,
+            updatedBy: null
+          }
+        }
+      });
+      done();
+    });
+
     it("should validly create a user", async done => {
       const query = `
       mutation createUser(

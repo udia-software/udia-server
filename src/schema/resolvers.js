@@ -30,13 +30,6 @@ module.exports = {
       pubSub.publish("Node", { Node: { mutation: "CREATED", node: newNode } });
       return newNode;
     },
-    createUser: async (_root, { email, username, password }, { Users }) => {
-      await Users.createUser(username, email, password);
-      return await authenticateUser(password, email, Users);
-    },
-    signinUser: async (_root, { email: { email, password } }, { Users }) => {
-      return await authenticateUser(password, email, Users);
-    },
     updateNode: async (
       _root,
       { id, dataType, title, content },
@@ -53,6 +46,20 @@ module.exports = {
         Node: { mutation: "UPDATED", node: updatedNode }
       });
       return updatedNode;
+    },
+    deleteNode: async (_root, { id }, { Nodes, user }) => {
+      const deletedNode = await Nodes.deleteNode(id, user);
+      pubSub.publish("Node", {
+        Node: { mutation: "UPDATED", node: deletedNode }
+      });
+      return deletedNode;
+    },
+    createUser: async (_root, { email, username, password }, { Users }) => {
+      await Users.createUser(username, email, password);
+      return await authenticateUser(password, email, Users);
+    },
+    signinUser: async (_root, { email: { email, password } }, { Users }) => {
+      return await authenticateUser(password, email, Users);
     }
   },
   Subscription: {
@@ -71,7 +78,7 @@ module.exports = {
       const parentNodes = await Nodes.allNodes({ id: parentId });
       return (parentNodes && parentNodes.length && parentNodes[0]) || null;
     },
-    children: async({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
+    children: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
       return await Nodes.allNodes(
         { ...filter, parent: _id },
         orderBy,
@@ -81,7 +88,11 @@ module.exports = {
     }
   },
   User: {
-    createdNodes: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
+    createdNodes: async (
+      { _id },
+      { filter, orderBy, skip, first },
+      { Nodes }
+    ) => {
       return await Nodes.allNodes(
         { ...filter, createdBy: _id },
         orderBy,
@@ -89,7 +100,11 @@ module.exports = {
         first
       );
     },
-    updatedNodes: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
+    updatedNodes: async (
+      { _id },
+      { filter, orderBy, skip, first },
+      { Nodes }
+    ) => {
       return await Nodes.allNodes(
         { ...filter, updatedBy: _id },
         orderBy,
@@ -99,7 +114,11 @@ module.exports = {
     }
   },
   FullUser: {
-    createdNodes: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
+    createdNodes: async (
+      { _id },
+      { filter, orderBy, skip, first },
+      { Nodes }
+    ) => {
       return await Nodes.allNodes(
         { ...filter, createdBy: _id },
         orderBy,
@@ -107,7 +126,11 @@ module.exports = {
         first
       );
     },
-    updatedNodes: async ({ _id }, { filter, orderBy, skip, first }, { Nodes }) => {
+    updatedNodes: async (
+      { _id },
+      { filter, orderBy, skip, first },
+      { Nodes }
+    ) => {
       return await Nodes.allNodes(
         { ...filter, updatedBy: _id },
         orderBy,

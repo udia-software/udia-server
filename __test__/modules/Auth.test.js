@@ -5,8 +5,18 @@ const UserManager = require("../../src/modules/UserManager");
 const { ValidationError } = require("../../src/modules/Errors");
 const testHelper = require("../testhelper");
 
-beforeEach(async done => {
-  await testHelper.initializeTestState();
+let db = null;
+let userManager = null;
+
+beforeAll(async done => {
+  await testHelper.initializeTestState(true);
+  db = await testHelper.getDatabase();
+  userManager = new UserManager(db.collection("users"));
+  done();
+});
+
+afterEach(async done => {
+  await testHelper.tearDownTestState();
   done();
 });
 
@@ -27,8 +37,6 @@ describe("Auth Module", () => {
     const name = "Test_User";
     const rawPassword = "Secret123";
     const email = "test@test.com";
-    const db = await testHelper.getDatabase();
-    const userManager = new UserManager(db.collection("users"));
 
     const newUserData = await userManager.createUser(name, email, rawPassword);
     const { token, user } = await Auth.authenticateUser(
@@ -53,18 +61,11 @@ describe("Auth Module", () => {
     const name = "Test_User";
     const rawPassword = "Secret123";
     const email = "test@test.com";
-    const db = await testHelper.getDatabase();
-    const userManager = new UserManager(db.collection("users"));
 
     await userManager.createUser(name, email, rawPassword);
     await expect(
       Auth.authenticateUser("mismatch", email, userManager)
-    ).rejects.toEqual(new ValidationError([
-      {
-        key: "rawPassword",
-        message: "Invalid password."
-      }
-    ]));
+    ).rejects.toEqual(new ValidationError());
     done();
   });
 
@@ -72,24 +73,15 @@ describe("Auth Module", () => {
     const name = "Test_User";
     const rawPassword = "Secret123";
     const email = "test@test.com";
-    const db = await testHelper.getDatabase();
-    const userManager = new UserManager(db.collection("users"));
 
     await userManager.createUser(name, email, rawPassword);
     await expect(
       Auth.authenticateUser(rawPassword, "not@me.com", userManager)
-    ).rejects.toEqual(new ValidationError([
-      {
-        key: "email",
-        message: "User not found for given email."
-      }
-    ]));
+    ).rejects.toEqual(new ValidationError());
     done();
   });
 
   it("should not authenticate invalid tokens", async done => {
-    const db = await testHelper.getDatabase();
-    const userManager = new UserManager(db.collection("users"));
     const nullToken = await Auth.verifyUserJWT(
       { headers: { authorization: null } },
       userManager
