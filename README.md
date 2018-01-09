@@ -19,10 +19,15 @@ Set these, or use the defaults.
 | Environment Variable Name | Default Value                     | Description                       |
 |---------------------------|-----------------------------------|-----------------------------------|
 | `NODE_ENV`                | `development`                     | `development` `test` `production` |
-| `MONGODB_URI`             | `mongodb://localhost:27017`       | Connection string for MongoDB     |
 | `JWT_SECRET`              | `UDIA Development JWT Secret Key` | JWT Secret Key                    |
+| `MONGODB_URI`             | `mongodb://localhost:27017`       | Connection string for MongoDB     |
 | `PORT`                    | `3000`                            | Port for serving http server      |
+| `SALT_ROUNDS`             | `12`                              | Number of bcrypt rounds           |
 | `TEST_JWT`                | ` `                               | JWT to use for graphiql in dev    |
+| `SMTP_USERNAME`           | `da4a6rdcusm7e2wt@ethereal.email` | SMTP username (ethereal default)  |
+| `SMTP_PASSWORD`           | `KtebcCbvkwDWsACqsB`              | SMTP password                     |
+| `SMTP_HOST`               | `smtp.ethereal.email`             | SMTP host (defaults to ethereal)  |
+| `SMTP_PORT`               | `587`                             | SMTP port                         |
 
 ## License
 

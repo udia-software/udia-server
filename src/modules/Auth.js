@@ -10,7 +10,7 @@ const { ValidationError } = require("./Errors");
  * @param {string} rawPassword - raw password
  */
 async function hashPassword(rawPassword) {
-  return await bcrypt.hash(rawPassword, SALT_ROUNDS);
+  return await bcrypt.hash(rawPassword, +SALT_ROUNDS);
 }
 
 /**
