@@ -2,8 +2,9 @@
 
 const DataLoader = require("dataloader");
 const { ObjectID } = require("mongodb");
-const { hashPassword } = require("./Auth");
+const { hashPassword, generateEmailValidationToken } = require("./Auth");
 const { ValidationError } = require("./Errors");
+const { sendEmailVerification } = require("../mailer");
 
 class UserManager {
   constructor(userCollection) {
@@ -38,7 +39,9 @@ class UserManager {
     // * Username is not empty
     // * Check username is alpha numeric with underscores
     // * Check username length is under 16 chars
-    const existingUsername = await this.collection.find({ username: { $regex: new RegExp(`^${username}$`, "i")} }).toArray();
+    const existingUsername = await this.collection
+      .find({ username: { $regex: new RegExp(`^${username}$`, "i") } })
+      .toArray();
     const alphaNumDashUnderscore_re = new RegExp("^[a-zA-Z0-9_]+$");
     if (existingUsername.length) {
       errors.push({
@@ -67,7 +70,9 @@ class UserManager {
     // * Email not already taken
     // * Email is not empty
     // * Email matches regular expression for 99% of all emails
-    const existingEmail = await this.collection.find({ email: { $regex: new RegExp(`^${email}$`, "i") } }).toArray();
+    const existingEmail = await this.collection
+      .find({ email: { $regex: new RegExp(`^${email}$`, "i") } })
+      .toArray();
     const email_re = new RegExp("[A-Z0-9._%+-]+@[A-Z0-9.-]+.[A-Z]{2,}");
     if (existingEmail.length) {
       errors.push({
@@ -94,22 +99,25 @@ class UserManager {
         message: "Password cannot be empty."
       });
     }
-    
+
     if (errors.length) {
       throw new ValidationError(errors);
     }
 
     const passwordHash = await hashPassword(password);
     const now = new Date();
-    const newUser = {
+    const userData = {
       username,
       email,
       createdAt: now,
       updatedAt: now,
-      passwordHash
+      passwordHash,
+      emailVerified: false
     };
-    const response = await this.collection.insert(newUser);
-    return Object.assign({ _id: response.insertedIds[0] }, newUser);
+    const response = await this.collection.insert(userData);
+    const newUser = Object.assign({ _id: response.insertedIds[0] }, userData);
+    await sendEmailVerification(newUser, generateEmailValidationToken(newUser));
+    return newUser;
   }
 
   /**

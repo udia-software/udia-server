@@ -3,11 +3,12 @@ const {
   SMTP_USERNAME,
   SMTP_PASSWORD,
   SMTP_HOST,
-  SMTP_PORT
+  SMTP_PORT,
+  NODE_ENV
 } = require("../constants");
 
 let config = {
-  pool: false,
+  pool: true,
   host: SMTP_HOST,
   port: SMTP_PORT,
   secure: true,
@@ -17,10 +18,42 @@ let config = {
   }
 };
 
+// coverage don't care about non test route
+/* istanbul ignore next */
+if (NODE_ENV === "development") {
+  config.pool = false;
+  config.secure = false;
+} else if (NODE_ENV === "test") {
+  config = {
+    streamTransport: true,
+    newline: "unix"
+  };
+}
 const transport = nodemailer.createTransport(config);
 
 // https://nodemailer.com/message/
-async function _sendMail(mailPayload) {
-  await transport.sendMail(mailPayload);
+async function sendEmailVerification(user, validationToken) {
+  const payload = {
+    from: {
+      name: "Server",
+      address: "server@udia.ca"
+    },
+    to: {
+      name: user.username,
+      address: user.email
+    },
+    subject: "[UDIA] Validate Your Email",
+    text: `${validationToken}`,
+    html: `<p>${validationToken}</p>`
+  };
+  try {
+    return await transport.sendMail(payload);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("sendEmailVerification failed", err);
+  }
 }
 
+module.exports = {
+  sendEmailVerification
+};

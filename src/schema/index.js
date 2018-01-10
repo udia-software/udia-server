@@ -75,6 +75,7 @@ const typeDefs = `
     createdAt: DateTime!
     updatedAt: DateTime!
     email: String! @isUnique
+    emailVerified: Boolean!
     passwordHash: String!
   }
 
@@ -113,6 +114,10 @@ const typeDefs = `
       password: String!
     ): SigninPayload!
     signinUser(email: AUTH_PROVIDER_EMAIL): SigninPayload!
+    forgotPassword(email: String!): Boolean
+    resendEmailConfirmation(email: String!): Boolean
+    confirmEmail(token: String!): Boolean!
+    changePassword(password: String!): FullUser!
   }
 
   type SigninPayload {

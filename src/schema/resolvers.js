@@ -60,6 +60,9 @@ module.exports = {
     },
     signinUser: async (_root, { email: { email, password } }, { Users }) => {
       return await authenticateUser(password, email, Users);
+    },
+    confirmEmail: async(_root, { token }, { Users, user }) => {
+      
     }
   },
   Subscription: {

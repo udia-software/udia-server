@@ -235,6 +235,7 @@ describe("Resolvers", () => {
             _id
           }
           email
+          emailVerified
         }
       }`;
       let data = { query };
@@ -258,7 +259,8 @@ describe("Resolvers", () => {
             email: resolverUser.email,
             createdNodes: [{ _id: "" + testNode._id }],
             updatedNodes: [{ _id: "" + testNode._id }],
-            username: resolverUser.username
+            username: resolverUser.username,
+            emailVerified: false
           }
         }
       });

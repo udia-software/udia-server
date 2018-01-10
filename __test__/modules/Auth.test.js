@@ -109,4 +109,30 @@ describe("Auth Module", () => {
     expect(expiredToken).toBe(null);
     done();
   });
+
+  it("should generate and handle email validation tokens", async done => {
+    const user = await testHelper.createTestUser({ email: "test@test.com" });
+    const emailValidationToken = Auth.generateEmailValidationToken(user);
+    expect(typeof emailValidationToken).toBe("string");
+    expect(Auth.isEmailValidationTokenValid(emailValidationToken, user)).toBe(
+      true
+    );
+    done();
+  });
+
+  it("should generate and handle invalid email validation tokens", async done => {
+    const user = await testHelper.createTestUser({ email: "test@test.com" });
+    const emailValidationToken = Auth.generateEmailValidationToken(user);
+    expect(
+      Auth.isEmailValidationTokenValid(emailValidationToken + "corrupt", user)
+    ).toBe(false);
+    const attacker = await testHelper.createTestUser({
+      username: "attacker",
+      email: "attacker@test.com"
+    });
+    expect(
+      Auth.isEmailValidationTokenValid(emailValidationToken, attacker)
+    ).toBe(false);
+    done();
+  });
 });
