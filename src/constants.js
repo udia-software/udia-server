@@ -12,5 +12,6 @@ module.exports = {
   SMTP_USERNAME: process.env.SMTP_USERNAME || "da4a6rdcusm7e2wt@ethereal.email",
   SMTP_PASSWORD: process.env.SMTP_PASSWORD || "KtebcCbvkwDWsACqsB",
   SMTP_HOST: process.env.SMTP_HOST || "smtp.ethereal.email",
-  SMTP_PORT: process.env.SMTP_PORT || "587"
+  SMTP_PORT: process.env.SMTP_PORT || "587",
+  EMAIL_TOKEN_TIMEOUT: process.env.EMAIL_TOKEN_TIMEOUT || "3600000"
 };

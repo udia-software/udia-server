@@ -2,7 +2,12 @@
 
 const DataLoader = require("dataloader");
 const { ObjectID } = require("mongodb");
-const { hashPassword, generateEmailValidationToken } = require("./Auth");
+const { EMAIL_TOKEN_TIMEOUT } = require("../constants");
+const {
+  hashPassword,
+  generateEmailValidationToken,
+  decryptAndParseEmailValidationToken
+} = require("./Auth");
 const { ValidationError } = require("./Errors");
 const { sendEmailVerification } = require("../mailer");
 
@@ -121,13 +126,65 @@ class UserManager {
   }
 
   /**
+   * Confirm an authenticated user's email
+   * @param {string} emailValidationToken - validation token sent to their email
+   */
+  async confirmEmail(emailValidationToken) {
+    const decryptedToken = decryptAndParseEmailValidationToken(
+      emailValidationToken
+    );
+    if (decryptedToken && decryptedToken._id) {
+      const user = await this.getUserById(decryptedToken._id);
+      if (
+        user &&
+        user.email === decryptedToken.email &&
+        decryptedToken.exp > 0 &&
+        decryptedToken.exp > Date.now() &&
+        decryptedToken.exp < Date.now() + +EMAIL_TOKEN_TIMEOUT
+      ) {
+        await this.collection.update(
+          { _id: user._id },
+          {
+            $set: { emailVerified: true }
+          }
+        );
+        this.userLoader.clear("" + user._id);
+        return true;
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Resend the user's confirmation email, if the email is not verified.
+   * If email is sent, return true. Otherwise return false or throw error
+   * @param {*} user - Mongo Document representing user
+   */
+  async resendConfirmationEmail(user) {
+    if (!user) {
+      throw new ValidationError([
+        { key: "user", message: "User must be authenticated." }
+      ]);
+    }
+    if (!user.emailVerified) {
+      await sendEmailVerification(user, generateEmailValidationToken(user));
+      return true;
+    }
+    return false;
+  }
+
+  /**
    * Get a user from the db by ID
    * @param {string} id - string representation of mongo object ID
    */
-  async getUserById(id) {
+  async getUserById(id, clearCache = false) {
     if (id) {
+      if (clearCache) {
+        this.userLoader.clear(id);
+      }
       return await this.userLoader.load(id);
     }
+    return null;
   }
 
   /**
@@ -136,6 +193,15 @@ class UserManager {
    */
   async getUserByEmail(email) {
     return await this.collection.findOne({ email });
+  }
+
+  /**
+   * Delete a user from the database
+   * @param {ObjectID} id - Mongo Object ID
+   */
+  async _deleteUserById(id) {
+    await this.collection.remove({ _id: id }, { justOne: true });
+    this.userLoader.clear(id);
   }
 }
 

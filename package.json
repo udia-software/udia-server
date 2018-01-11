@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "npm run lint && SALT_ROUNDS=5 NODE_ENV=test jest --coverage --runInBand --verbose",
+    "test": "SALT_ROUNDS=5 NODE_ENV=test jest --coverage --runInBand --verbose",
     "lint": "eslint src __test__",
     "start": "node ./src/index.js"
   },
@@ -52,6 +52,7 @@
     "coveralls": "^3.0.0",
     "eslint": "^4.15.0",
     "jest": "^22.0.5",
-    "jest-cli": "^22.0.5"
+    "jest-cli": "^22.0.5",
+    "mockdate": "^2.0.2"
   }
 }

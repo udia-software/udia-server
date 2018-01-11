@@ -3,7 +3,11 @@
 const bcrypt = require("bcrypt");
 const crypto = require("crypto-js");
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET, SALT_ROUNDS } = require("../constants");
+const {
+  JWT_SECRET,
+  SALT_ROUNDS,
+  EMAIL_TOKEN_TIMEOUT
+} = require("../constants");
 const { ValidationError } = require("./Errors");
 
 /**
@@ -70,7 +74,7 @@ function generateEmailValidationToken(user) {
   const rawValidationToken = {
     email: "" + user.email,
     _id: "" + user._id,
-    exp: Date.now() + 3600000
+    exp: Date.now() + +EMAIL_TOKEN_TIMEOUT
   };
   const cypherText = crypto.AES.encrypt(
     JSON.stringify(rawValidationToken),
@@ -84,22 +88,12 @@ function generateEmailValidationToken(user) {
  * @param {string} token - Email verification Token
  * @param {*} user - Mongo Document for user object
  */
-function isEmailValidationTokenValid(token, user) {
+function decryptAndParseEmailValidationToken(token) {
   try {
     const bytes = crypto.AES.decrypt(token, JWT_SECRET);
-    const tokenData = JSON.parse(bytes.toString(crypto.enc.Utf8));
-    if (
-      tokenData._id === "" + user._id &&
-      tokenData.email === "" + user.email &&
-      tokenData.exp > 0 &&
-      Date.now() < tokenData.exp
-    ) {
-      return true;
-    } else {
-      return false;
-    }
+    return JSON.parse(bytes.toString(crypto.enc.Utf8));
   } catch (err) {
-    return false;
+    return null;
   }
 }
 
@@ -108,5 +102,5 @@ module.exports = {
   verifyUserJWT,
   authenticateUser,
   generateEmailValidationToken,
-  isEmailValidationTokenValid
+  decryptAndParseEmailValidationToken
 };

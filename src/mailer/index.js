@@ -1,3 +1,5 @@
+"use strict";
+
 const nodemailer = require("nodemailer");
 const {
   SMTP_USERNAME,
@@ -35,7 +37,7 @@ const transport = nodemailer.createTransport(config);
 async function sendEmailVerification(user, validationToken) {
   const payload = {
     from: {
-      name: "Server",
+      name: "UDIA Server",
       address: "server@udia.ca"
     },
     to: {
@@ -43,12 +45,14 @@ async function sendEmailVerification(user, validationToken) {
       address: user.email
     },
     subject: "[UDIA] Validate Your Email",
-    text: `${validationToken}`,
-    html: `<p>${validationToken}</p>`
+    text: `This is your validation token. It is valid four hours after request generation.\n${validationToken}`,
+    html: `<p>This is your validation token. It is valid four hours after request generation.</p></p>${validationToken}</p>`
   };
   try {
     return await transport.sendMail(payload);
   } catch (err) {
+    // coverage don't care about send mail failure, tests never fails
+    /* istanbul ignore next */
     // eslint-disable-next-line no-console
     console.error("sendEmailVerification failed", err);
   }

@@ -468,7 +468,7 @@ describe("NodeManager Module", () => {
         parent: null
       });
       expect(nullParentNodes).toContainEqual(
-        await nodeManager._getNodeById(node._id)
+        await nodeManager.getNodeById(node._id)
       );
       const badIdNodes = await nodeManager.allNodes({
         parent: "foobar"
@@ -489,7 +489,7 @@ describe("NodeManager Module", () => {
         children_contains: [commentNode._id + ""]
       });
       expect(hasChildrenNodes).toContainEqual(
-        await nodeManager._getNodeById(node._id)
+        await nodeManager.getNodeById(node._id)
       );
       const newCommentNode = await testHelper.generateTestNode({
         createdBy,
@@ -500,7 +500,7 @@ describe("NodeManager Module", () => {
         children_contains: [commentNode._id, newCommentNode._id]
       });
       expect(hasMultipleChildrenNodes).toContainEqual(
-        await nodeManager._getNodeById(node._id, true)
+        await nodeManager.getNodeById(node._id, true)
       );
       const noChildrenNodes = await nodeManager.allNodes({
         children_contains: [node._id + ""]
@@ -645,14 +645,14 @@ describe("NodeManager Module", () => {
     it("should use dataloader to get a node by ID", async done => {
       const createdBy = await testHelper.createTestUser({});
       const node = await testHelper.generateTestNode({ createdBy });
-      expect(await nodeManager._getNodeById(node._id)).toBeDefined();
+      expect(await nodeManager.getNodeById(node._id)).toBeDefined();
       done();
     });
 
     it("should gracefully handle bad keys", async done => {
-      expect(await nodeManager._getNodeById(new ObjectId())).toBeNull();
-      expect(await nodeManager._getNodeById("")).toBeNull();
-      expect(await nodeManager._getNodeById("bloop")).toBeNull();
+      expect(await nodeManager.getNodeById(new ObjectId())).toBeNull();
+      expect(await nodeManager.getNodeById("")).toBeNull();
+      expect(await nodeManager.getNodeById("bloop")).toBeNull();
       done();
     });
   });

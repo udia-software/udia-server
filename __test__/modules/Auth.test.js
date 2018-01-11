@@ -2,6 +2,7 @@
 
 const Auth = require("../../src/modules/Auth");
 const UserManager = require("../../src/modules/UserManager");
+const { EMAIL_TOKEN_TIMEOUT } = require("../../src/constants");
 const { ValidationError } = require("../../src/modules/Errors");
 const testHelper = require("../testhelper");
 
@@ -114,9 +115,12 @@ describe("Auth Module", () => {
     const user = await testHelper.createTestUser({ email: "test@test.com" });
     const emailValidationToken = Auth.generateEmailValidationToken(user);
     expect(typeof emailValidationToken).toBe("string");
-    expect(Auth.isEmailValidationTokenValid(emailValidationToken, user)).toBe(
-      true
-    );
+    const decryptedToken = Auth.decryptAndParseEmailValidationToken(emailValidationToken);
+    expect(decryptedToken).toBeDefined();
+    expect(decryptedToken._id).toEqual("" + user._id);
+    expect(decryptedToken.email).toEqual(user.email);
+    expect(decryptedToken.exp).toBeGreaterThan(Date.now());
+    expect(decryptedToken.exp).toBeLessThan(Date.now() + +EMAIL_TOKEN_TIMEOUT);
     done();
   });
 
@@ -124,15 +128,9 @@ describe("Auth Module", () => {
     const user = await testHelper.createTestUser({ email: "test@test.com" });
     const emailValidationToken = Auth.generateEmailValidationToken(user);
     expect(
-      Auth.isEmailValidationTokenValid(emailValidationToken + "corrupt", user)
-    ).toBe(false);
-    const attacker = await testHelper.createTestUser({
-      username: "attacker",
-      email: "attacker@test.com"
-    });
-    expect(
-      Auth.isEmailValidationTokenValid(emailValidationToken, attacker)
-    ).toBe(false);
+      Auth.decryptAndParseEmailValidationToken(`corrupt${emailValidationToken}`)
+    ).toBe(null);
+    expect(Auth.decryptAndParseEmailValidationToken("")).toBe(null);
     done();
   });
 });

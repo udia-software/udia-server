@@ -1,3 +1,5 @@
+"use strict";
+
 const { makeExecutableSchema } = require("graphql-tools");
 const resolvers = require("./resolvers");
 
@@ -115,9 +117,9 @@ const typeDefs = `
     ): SigninPayload!
     signinUser(email: AUTH_PROVIDER_EMAIL): SigninPayload!
     forgotPassword(email: String!): Boolean
-    resendEmailConfirmation(email: String!): Boolean
-    confirmEmail(token: String!): Boolean!
     changePassword(password: String!): FullUser!
+    resendConfirmationEmail: Boolean!
+    confirmEmail(token: String!): Boolean!
   }
 
   type SigninPayload {

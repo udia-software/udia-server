@@ -3,6 +3,7 @@
 const axios = require("axios");
 const start = require("../../src/index");
 const testHelper = require("../testhelper");
+const { generateEmailValidationToken } = require("../../src/modules/Auth");
 const { PORT } = require("../../src/constants");
 
 let server = null;
@@ -610,6 +611,47 @@ describe("Resolvers", () => {
         "username",
         "resolverTest"
       );
+      done();
+    });
+
+    it("should validly confirm an email", async done => {
+      const query = `
+      mutation confirmEmail($token: String!) {
+        confirmEmail(token: $token)
+      }`;
+      const user = await testHelper.createTestUser({
+        username: "resolveme",
+        email: "resolveme@test.com"
+      });
+      const token = generateEmailValidationToken(user);
+      const data = {
+        query,
+        variables: { token }
+      };
+      const confirmResponse = await client.post("/graphql", data);
+      expect(confirmResponse.status).toBe(200);
+      expect(confirmResponse.data).toEqual({ data: { confirmEmail: true } });
+      done();
+    });
+
+    it("should validly resend an email confirmation", async done => {
+      const user = await testHelper.createTestUser({
+        username: "creator",
+        email: "creator@test.com"
+      });
+      const jwt = await testHelper.getJWT({ email: user.email });
+      const query = `
+      mutation resendConfirmationEmail {
+        resendConfirmationEmail
+      }`;
+      const data = { query };
+      const response = await client.post("/graphql", data, {
+        headers: { authorization: jwt }
+      });
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({
+        data: { resendConfirmationEmail: true }
+      });
       done();
     });
   });

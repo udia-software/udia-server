@@ -262,7 +262,7 @@ class NodeManager {
   async updateNode(id, updatedBy, dataType, title, content) {
     const errors = [];
     const updatedById = NodeManager.validateAuthenticated(updatedBy, errors);
-    const toUpdateNode = await this._getNodeById(id, true);
+    const toUpdateNode = await this.getNodeById(id, true);
     NodeManager.validateNodeModificationUser(toUpdateNode, updatedById, errors);
 
     NodeManager.validateDataType(
@@ -280,7 +280,7 @@ class NodeManager {
       errors
     );
     NodeManager.validateUpdateDifferent(
-      (toUpdateNode || {}),
+      toUpdateNode || {},
       dataType,
       title,
       content,
@@ -296,7 +296,7 @@ class NodeManager {
       { _id: new ObjectID(id) },
       { $set: { updatedById, updatedAt: now, dataType, title, content } }
     );
-    return await this._getNodeById(id, true);
+    return await this.getNodeById(id, true);
   }
 
   /**
@@ -307,7 +307,7 @@ class NodeManager {
   async deleteNode(id, deletedBy) {
     const errors = [];
     const updatedById = NodeManager.validateAuthenticated(deletedBy, errors);
-    const toDeleteNode = await this._getNodeById(id, true);
+    const toDeleteNode = await this.getNodeById(id, true);
     NodeManager.validateNodeModificationUser(toDeleteNode, updatedById, errors);
 
     if (errors.length) {
@@ -328,7 +328,7 @@ class NodeManager {
         }
       }
     );
-    return await this._getNodeById(id, true);
+    return await this.getNodeById(id, true);
   }
 
   /**
@@ -514,11 +514,14 @@ class NodeManager {
    * @param {string} id - string representation of mongo object ID
    * @param {bool?} clearCache - whether or not to clear the dataloader cache
    */
-  async _getNodeById(id, clearCache = false) {
-    if (clearCache) {
-      this.nodeLoader.clear(id);
+  async getNodeById(id, clearCache = false) {
+    if (id) {
+      if (clearCache) {
+        this.nodeLoader.clear(id);
+      }
+      return await this.nodeLoader.load(id);
     }
-    return await this.nodeLoader.load(id);
+    return null;
   }
 }
 
