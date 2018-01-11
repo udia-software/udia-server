@@ -34,6 +34,11 @@ if (NODE_ENV === "development") {
 const transport = nodemailer.createTransport(config);
 
 // https://nodemailer.com/message/
+/**
+ * Send email to user for email verification purposes
+ * @param {*} user - MongoDB Document representing user
+ * @param {string} validationToken - User's email validation token
+ */
 async function sendEmailVerification(user, validationToken) {
   const payload = {
     from: {

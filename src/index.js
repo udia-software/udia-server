@@ -52,12 +52,13 @@ const start = async () => {
 
   const buildOptions = async req => {
     const userManager = new UserManager(db.collection("users"));
-    let user = await verifyUserJWT(req, userManager);
+    const user = await verifyUserJWT(req, userManager);
     return {
       context: {
         Users: userManager,
         Nodes: new NodeManager(db.collection("nodes")),
-        user
+        user,
+        originIp: req.ip
       },
       formatError: error => {
         return {
@@ -68,7 +69,7 @@ const start = async () => {
       schema
     };
   };
-
+  app.set("trust proxy", ["loopback", "linklocal", "uniquelocal"]);
   app.use(cors());
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
   // coverage don't care about vetting developer graphiql route
