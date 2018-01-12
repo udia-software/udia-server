@@ -120,6 +120,7 @@ const typeDefs = `
     changePassword(password: String!): FullUser!
     resendConfirmationEmail: Boolean!
     confirmEmail(token: String!): Boolean!
+    changeEmail(email: String!): FullUser!
   }
 
   type SigninPayload {

@@ -28,6 +28,7 @@ Set these, or use the defaults.
 | `SMTP_PASSWORD`           | `KtebcCbvkwDWsACqsB`              | SMTP password                     |
 | `SMTP_HOST`               | `smtp.ethereal.email`             | SMTP host (defaults to ethereal)  |
 | `SMTP_PORT`               | `587`                             | SMTP port                         |
+| `EMAIL_TOKEN_TIMEOUT`     | `3600000`                         | Timed email token validity (1hr)  |
 
 ## License
 

@@ -75,6 +75,22 @@ describe("UserManager Module", () => {
       done();
     });
 
+    it("should change an email when new valid email provided", async done => {
+      let user = await testHelper.createTestUser({
+        email: "changeme@test.com",
+        username: "emailChange"
+      });
+      expect(user.emailVerified).toBe(false);
+      const token = Auth.generateEmailValidationToken(user);
+      await userManager.confirmEmail(token);
+      user = await userManager.getUserById(user._id);
+      expect(user.emailVerified).toBe(true);
+      user = await userManager.changeEmail(user, "newEmail@test.com");
+      expect(user.email).toEqual("newEmail@test.com");
+      expect(user.emailVerified).toBe(false);
+      done();
+    });
+
     it("should error on creating user with taken username", async done => {
       const username = "UN_Collision";
       const rawPassword = "Secret234";
@@ -201,6 +217,39 @@ describe("UserManager Module", () => {
       await expect(userManager.resendConfirmationEmail(null)).rejects.toEqual(
         new ValidationError()
       );
+      done();
+    });
+
+    it("should error when new valid email provided is in use", async done => {
+      let user = await testHelper.createTestUser({
+        email: "changeme@test.com",
+        username: "emailChange"
+      });
+      await testHelper.createTestUser({
+        email: "popular@test.com",
+        username: "popular"
+      });
+      await expect(
+        userManager.changeEmail(user, "popular@test.com")
+      ).rejects.toEqual(new ValidationError());
+      done();
+    });
+
+    it("should error when new email provided has not changed", async done => {
+      let user = await testHelper.createTestUser({
+        email: "static@test.com",
+        username: "emailChange"
+      });
+      await expect(
+        userManager.changeEmail(user, "static@test.com")
+      ).rejects.toEqual(new ValidationError());
+      done();
+    });
+
+    it("should error when changing email while unauthorized", async done => {
+      await expect(
+        userManager.changeEmail(null, "how@test.com")
+      ).rejects.toEqual(new ValidationError());
       done();
     });
   });

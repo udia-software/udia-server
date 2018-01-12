@@ -654,5 +654,46 @@ describe("Resolvers", () => {
       });
       done();
     });
+
+    it("should validly change an email", async done => {
+      const query = `
+      mutation changeEmail($email: String!) {
+        changeEmail(email: $email) {
+          _id
+          username
+          createdNodes {
+            _id
+          }
+          updatedNodes {
+            _id
+          }
+          email
+          emailVerified
+        }
+      }`;
+      const user = await testHelper.createTestUser({
+        username: "changeme",
+        email: "changeme@test.com"
+      });
+      const jwt = await testHelper.getJWT({ email: user.email });
+      const data = { query, variables: { email: "newemail@test.com" } };
+      const response = await client.post("/graphql", data, {
+        headers: { authorization: jwt }
+      });
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({
+        data: {
+          changeEmail: {
+            _id: "" + user._id,
+            createdNodes: [],
+            email: "newemail@test.com",
+            emailVerified: false,
+            updatedNodes: [],
+            username: "changeme"
+          }
+        }
+      });
+      done();
+    });
   });
 });

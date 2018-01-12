@@ -20,6 +20,44 @@ class UserManager {
   }
 
   /**
+   * Email Validation, check email not already taken, is not empty
+   * Email matches regular expression for 99% of all emails
+   * @param {string} email - User's email entered
+   * @param {Array} errors - Array of errors
+   * @param {*} user - (Optional) Mongo Document, current user
+   */
+  async validateEmail(email, errors, user = null) {
+    const existingEmail = await this.collection
+      .find({ email: { $regex: new RegExp(`^${email}$`, "i") } })
+      .toArray();
+    const email_re = new RegExp("[A-Z0-9._%+-]+@[A-Z0-9.-]+.[A-Z]{2,}");
+    if (existingEmail.length) {
+      if (user && `${existingEmail[0]._id}` === `${user._id}`) {
+        errors.push({
+          key: "email",
+          message: "New email is the same as old email."
+        });
+      } else {
+        errors.push({
+          key: "email",
+          message: "Email is already in use by another user."
+        });
+      }
+    }
+    if (!email.trim().length) {
+      errors.push({
+        key: "email",
+        message: "Email cannot be empty."
+      });
+    } else if (!email_re.exec(email.trim().toUpperCase())) {
+      errors.push({
+        key: "email",
+        message: "Email must be in the form quantifier@domain.tld."
+      });
+    }
+  }
+
+  /**
    * Function for dataloader to batch lookup of users
    * @param {Array<string>} keys - Arrays of user ids to batch lookup
    */
@@ -71,30 +109,7 @@ class UserManager {
       });
     }
 
-    // Email Validation
-    // * Email not already taken
-    // * Email is not empty
-    // * Email matches regular expression for 99% of all emails
-    const existingEmail = await this.collection
-      .find({ email: { $regex: new RegExp(`^${email}$`, "i") } })
-      .toArray();
-    const email_re = new RegExp("[A-Z0-9._%+-]+@[A-Z0-9.-]+.[A-Z]{2,}");
-    if (existingEmail.length) {
-      errors.push({
-        key: "email",
-        message: "Email is already in use by another user."
-      });
-    } else if (!email.trim().length) {
-      errors.push({
-        key: "email",
-        message: "Email cannot be empty."
-      });
-    } else if (!email_re.exec(email.trim().toUpperCase())) {
-      errors.push({
-        key: "email",
-        message: "Email must be in the form quantifier@domain.tld."
-      });
-    }
+    await this.validateEmail(email, errors);
 
     // Password Validation
     // * Password is not empty
@@ -123,6 +138,30 @@ class UserManager {
     const newUser = Object.assign({ _id: response.insertedIds[0] }, userData);
     await sendEmailVerification(newUser, generateEmailValidationToken(newUser));
     return newUser;
+  }
+
+  async changeEmail(user, email) {
+    const errors = [];
+    if (!user) {
+      errors.push({
+        key: "user",
+        message: "User must be authenticated."
+      });
+    }
+    await this.validateEmail(email, errors, user);
+    if (errors.length) {
+      throw new ValidationError(errors);
+    }
+    await this.collection.update(
+      { _id: user._id },
+      { $set: { email, emailVerified: false } }
+    );
+    const updatedUser = await this.getUserById(user._id, true);
+    await sendEmailVerification(
+      updatedUser,
+      generateEmailValidationToken(updatedUser)
+    );
+    return updatedUser;
   }
 
   /**
