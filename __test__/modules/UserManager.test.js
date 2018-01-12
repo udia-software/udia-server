@@ -1,8 +1,11 @@
 "use strict";
 
 const { ObjectId } = require("mongodb");
+const MockDate = require("mockdate");
 const UserManager = require("../../src/modules/UserManager");
+const Auth = require("../../src/modules/Auth");
 const { ValidationError } = require("../../src/modules/Errors");
+const { EMAIL_TOKEN_TIMEOUT } = require("../../src/constants");
 const testHelper = require("../testhelper");
 
 let db = null;
@@ -41,6 +44,50 @@ describe("UserManager Module", () => {
       expect(newUserData.email).toBe(email);
       expect(newUserData.username).toBe(username);
 
+      done();
+    });
+
+    it("should confirm an email given valid email token", async done => {
+      let user = await testHelper.createTestUser({
+        email: "confirm@test.com",
+        username: "confirm"
+      });
+      expect(user.emailVerified).toBe(false);
+      const token = Auth.generateEmailValidationToken(user);
+      const emailConfirmStatus = await userManager.confirmEmail(token);
+      expect(emailConfirmStatus).toBe(true);
+      user = await userManager.getUserById(user._id, true);
+      expect(user.emailVerified).toBe(true);
+      done();
+    });
+
+    it("should send a confirmation email when necessary", async done => {
+      let user = await testHelper.createTestUser({
+        email: "confirm@test.com",
+        username: "confirm"
+      });
+      expect(user.emailVerified).toBe(false);
+      expect(await userManager.resendConfirmationEmail(user)).toBe(true);
+      const token = Auth.generateEmailValidationToken(user);
+      await userManager.confirmEmail(token);
+      user = await userManager.getUserById(user._id);
+      expect(await userManager.resendConfirmationEmail(user)).toBe(false);
+      done();
+    });
+
+    it("should change an email when new valid email provided", async done => {
+      let user = await testHelper.createTestUser({
+        email: "changeme@test.com",
+        username: "emailChange"
+      });
+      expect(user.emailVerified).toBe(false);
+      const token = Auth.generateEmailValidationToken(user);
+      await userManager.confirmEmail(token);
+      user = await userManager.getUserById(user._id);
+      expect(user.emailVerified).toBe(true);
+      user = await userManager.changeEmail(user, "newEmail@test.com");
+      expect(user.email).toEqual("newEmail@test.com");
+      expect(user.emailVerified).toBe(false);
       done();
     });
 
@@ -124,6 +171,87 @@ describe("UserManager Module", () => {
       ).rejects.toEqual(new ValidationError());
       done();
     });
+
+    it("should not confirm an email when user is gone", async done => {
+      let user = await testHelper.createTestUser({
+        email: "confirm@test.com",
+        username: "confirm"
+      });
+      expect(user.emailVerified).toBe(false);
+      const token = Auth.generateEmailValidationToken(user);
+      await userManager._deleteUserById(user._id);
+      const emailConfirmStatus = await userManager.confirmEmail(token);
+      expect(emailConfirmStatus).toBe(false);
+      done();
+    });
+
+    it("should not confirm an email with an invalid token", async done => {
+      let user = await testHelper.createTestUser({
+        email: "confirm@test.com",
+        username: "confirm"
+      });
+      expect(user.emailVerified).toBe(false);
+      const token = Auth.generateEmailValidationToken(user);
+      const emailConfirmStatus = await userManager.confirmEmail(
+        `corrupt${token}`
+      );
+      expect(emailConfirmStatus).toBe(false);
+      done();
+    });
+
+    it("should not confirm an email after the expiry time passed", async done => {
+      let user = await testHelper.createTestUser({
+        email: "confirm@test.com",
+        username: "confirm"
+      });
+      expect(user.emailVerified).toBe(false);
+      const token = Auth.generateEmailValidationToken(user);
+      MockDate.set(new Date(Date.now() + +EMAIL_TOKEN_TIMEOUT));
+      const emailConfirmStatus = await userManager.confirmEmail(token);
+      expect(emailConfirmStatus).toBe(false);
+      MockDate.reset();
+      done();
+    });
+
+    it("should not send an email confirmation for unauthenticated users", async done => {
+      await expect(userManager.resendConfirmationEmail(null)).rejects.toEqual(
+        new ValidationError()
+      );
+      done();
+    });
+
+    it("should error when new valid email provided is in use", async done => {
+      let user = await testHelper.createTestUser({
+        email: "changeme@test.com",
+        username: "emailChange"
+      });
+      await testHelper.createTestUser({
+        email: "popular@test.com",
+        username: "popular"
+      });
+      await expect(
+        userManager.changeEmail(user, "popular@test.com")
+      ).rejects.toEqual(new ValidationError());
+      done();
+    });
+
+    it("should error when new email provided has not changed", async done => {
+      let user = await testHelper.createTestUser({
+        email: "static@test.com",
+        username: "emailChange"
+      });
+      await expect(
+        userManager.changeEmail(user, "static@test.com")
+      ).rejects.toEqual(new ValidationError());
+      done();
+    });
+
+    it("should error when changing email while unauthorized", async done => {
+      await expect(
+        userManager.changeEmail(null, "how@test.com")
+      ).rejects.toEqual(new ValidationError());
+      done();
+    });
   });
 
   describe("Query", () => {
@@ -140,6 +268,19 @@ describe("UserManager Module", () => {
       const user = await testHelper.createTestUser({ email: "123@test.com" });
       const returnedUser = await userManager.getUserByEmail("123@test.com");
       expect(returnedUser).toEqual(user);
+      done();
+    });
+  });
+
+  describe("Meta", () => {
+    it("should delete a user by id", async done => {
+      let user = await testHelper.createTestUser({});
+      user = await userManager.getUserById(user._id);
+      expect(user).toBeDefined();
+      expect(user._id).toBeDefined();
+      await userManager._deleteUserById(user._id);
+      user = await userManager.getUserById(user._id);
+      expect(user).toBe(null);
       done();
     });
   });

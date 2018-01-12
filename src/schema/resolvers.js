@@ -60,6 +60,15 @@ module.exports = {
     },
     signinUser: async (_root, { email: { email, password } }, { Users }) => {
       return await authenticateUser(password, email, Users);
+    },
+    resendConfirmationEmail: async (_root, _params, { Users, user }) => {
+      return await Users.resendConfirmationEmail(user);
+    },
+    confirmEmail: async (_root, { token }, { Users }) => {
+      return await Users.confirmEmail(token);
+    },
+    changeEmail: async (_root, { email }, { Users, user }) => {
+      return await Users.changeEmail(user, email);
     }
   },
   Subscription: {

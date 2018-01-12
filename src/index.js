@@ -8,7 +8,7 @@ const { execute, subscribe, formatError } = require("graphql");
 const { createServer } = require("http");
 const { SubscriptionServer } = require("subscriptions-transport-ws");
 
-const { PORT, NODE_ENV, TEST_JWT } = require("./constants");
+const { PORT, NODE_ENV, TEST_JWT, SALT_ROUNDS } = require("./constants");
 const connectMongo = require("./connectMongo");
 const schema = require("./schema");
 const { verifyUserJWT } = require("./modules/Auth");
@@ -20,29 +20,45 @@ const start = async () => {
     // coverage don't care about mongo client connection errors.
     /* istanbul ignore next */
     err => {
-      // eslint-disable-next-line no-console
-      console.error(err);
-      process.exit(1);
+      throw err;
     }
   );
+
   let db = null;
   // coverage don't care env conditional db.
   /* istanbul ignore next */
   if (NODE_ENV === "test") {
     db = _mongo.db("udiatest");
-  } else {
+  } else if (NODE_ENV === "development") {
+    db = _mongo.db("udiadev");
+  } else if (NODE_ENV === "production") {
     db = _mongo.db("udia");
+  } else {
+    throw new Error(
+      `NODE_ENV must be 'test', 'development' or 'production'. (currently ${NODE_ENV})`
+    );
   }
+
+  // coverage don't care about production salt rounds.
+  /* istanbul ignore next */
+  if (NODE_ENV === "production") {
+    if ((+SALT_ROUNDS || 0) < 12) {
+      const saltErr = `Salt Rounds cannot be less than 12. (currently ${SALT_ROUNDS})`;
+      throw new Error(saltErr);
+    }
+  }
+
   const app = express();
 
   const buildOptions = async req => {
     const userManager = new UserManager(db.collection("users"));
-    let user = await verifyUserJWT(req, userManager);
+    const user = await verifyUserJWT(req, userManager);
     return {
       context: {
         Users: userManager,
         Nodes: new NodeManager(db.collection("nodes")),
-        user
+        user,
+        originIp: req.ip
       },
       formatError: error => {
         return {
@@ -53,7 +69,7 @@ const start = async () => {
       schema
     };
   };
-
+  app.set("trust proxy", ["loopback", "linklocal", "uniquelocal"]);
   app.use(cors());
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
   // coverage don't care about vetting developer graphiql route

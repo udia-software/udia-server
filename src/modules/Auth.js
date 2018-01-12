@@ -1,8 +1,13 @@
 "use strict";
 
 const bcrypt = require("bcrypt");
+const crypto = require("crypto-js");
 const jwt = require("jsonwebtoken");
-const { JWT_SECRET, SALT_ROUNDS } = require("../constants");
+const {
+  JWT_SECRET,
+  SALT_ROUNDS,
+  EMAIL_TOKEN_TIMEOUT
+} = require("../constants");
 const { ValidationError } = require("./Errors");
 
 /**
@@ -10,7 +15,7 @@ const { ValidationError } = require("./Errors");
  * @param {string} rawPassword - raw password
  */
 async function hashPassword(rawPassword) {
-  return await bcrypt.hash(rawPassword, SALT_ROUNDS);
+  return await bcrypt.hash(rawPassword, +SALT_ROUNDS);
 }
 
 /**
@@ -21,7 +26,7 @@ async function hashPassword(rawPassword) {
 async function verifyUserJWT({ headers: { authorization } }, Users) {
   const token = authorization || "";
   try {
-    const tokenPayload = jwt.verify(token, JWT_SECRET);    
+    const tokenPayload = jwt.verify(token, JWT_SECRET);
     const user = await Users.getUserById(tokenPayload.id);
     return user;
   } catch (_) {
@@ -38,10 +43,12 @@ async function verifyUserJWT({ headers: { authorization } }, Users) {
 async function authenticateUser(rawPassword, email, Users) {
   const user = await Users.getUserByEmail(email);
   if (!user) {
-    throw new ValidationError([{
-      key: "email",
-      message: "User not found for given email.",
-    }]);
+    throw new ValidationError([
+      {
+        key: "email",
+        message: "User not found for given email."
+      }
+    ]);
   }
   const passwordsMatch = await bcrypt.compare(rawPassword, user.passwordHash);
   if (passwordsMatch) {
@@ -51,14 +58,49 @@ async function authenticateUser(rawPassword, email, Users) {
     });
     return { token, user };
   }
-  throw new ValidationError([{
-    message: "Invalid password.",
-    key: "rawPassword"
-  }]);
+  throw new ValidationError([
+    {
+      message: "Invalid password.",
+      key: "rawPassword"
+    }
+  ]);
+}
+
+/**
+ * Given a user, generate the email verification token.
+ * @param {*} user - Mongo Document for user object
+ */
+function generateEmailValidationToken(user) {
+  const rawValidationToken = {
+    email: "" + user.email,
+    _id: "" + user._id,
+    exp: Date.now() + +EMAIL_TOKEN_TIMEOUT
+  };
+  const cypherText = crypto.AES.encrypt(
+    JSON.stringify(rawValidationToken),
+    JWT_SECRET
+  );
+  return cypherText.toString();
+}
+
+/**
+ * Given a user and an email verification token, test if token is valid.
+ * @param {string} token - Email verification Token
+ * @param {*} user - Mongo Document for user object
+ */
+function decryptAndParseEmailValidationToken(token) {
+  try {
+    const bytes = crypto.AES.decrypt(token, JWT_SECRET);
+    return JSON.parse(bytes.toString(crypto.enc.Utf8));
+  } catch (err) {
+    return null;
+  }
 }
 
 module.exports = {
   hashPassword,
   verifyUserJWT,
-  authenticateUser
+  authenticateUser,
+  generateEmailValidationToken,
+  decryptAndParseEmailValidationToken
 };
