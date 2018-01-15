@@ -3,8 +3,12 @@
 const axios = require("axios");
 const start = require("../../src/index");
 const testHelper = require("../testhelper");
-const { generateEmailValidationToken } = require("../../src/modules/Auth");
-const { PORT } = require("../../src/constants");
+const { generateValidationToken } = require("../../src/modules/Auth");
+const {
+  PORT,
+  TOKEN_TYPE_VERIFY_EMAIL,
+  TOKEN_TYPE_RESET_PASSWORD
+} = require("../../src/constants");
 
 let server = null;
 let client = null;
@@ -623,7 +627,7 @@ describe("Resolvers", () => {
         username: "resolveme",
         email: "resolveme@test.com"
       });
-      const token = generateEmailValidationToken(user);
+      const token = generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
       const data = {
         query,
         variables: { token }
@@ -693,6 +697,115 @@ describe("Resolvers", () => {
           }
         }
       });
+      done();
+    });
+
+    it("should validly send forgot password email", async done => {
+      const userEmail = "forgotpass@test.com";
+      const query = `
+      mutation forgotPassword($email: String!) {
+        forgotPassword(email: $email)
+      }`;
+      await testHelper.createTestUser({
+        email: userEmail
+      });
+      const data = { query, variables: { email: userEmail } };
+      const response = await client.post("/graphql", data);
+      expect(response.status).toBe(200);
+      expect(response.data).toEqual({ data: { forgotPassword: true } });
+      done();
+    });
+
+    it("should validly generate new password from token", async done => {
+      const userEmail = "forgotpass@test.com";
+      const username = "forgetful";
+      const newPass = "newpass";
+      const query = `
+      mutation generateNewPassword($token: String!, $password: String!) {
+        generateNewPassword(token: $token, password: $password) {
+          token
+          user {
+            _id
+            username
+            createdNodes {
+              _id
+            }
+            email
+            passwordHash
+          }
+        }
+      }`;
+      const user = await testHelper.createTestUser({
+        email: userEmail,
+        username
+      });
+      const passResetToken = generateValidationToken(
+        user,
+        TOKEN_TYPE_RESET_PASSWORD
+      );
+      const data = {
+        query,
+        variables: { token: passResetToken, password: newPass }
+      };
+      const response = await client.post("/graphql", data);
+      expect(response.status).toBe(200);
+      expect(response.data.data.generateNewPassword.user._id).toEqual(
+        "" + user._id
+      );
+      expect(response.data.data.generateNewPassword.user.createdNodes).toEqual(
+        []
+      );
+      expect(response.data.data.generateNewPassword.user.email).toEqual(
+        userEmail
+      );
+      expect(response.data.data.generateNewPassword.user.username).toEqual(
+        username
+      );
+      expect(response.data.data.generateNewPassword.token).toBeDefined();
+      expect(
+        response.data.data.generateNewPassword.user.passwordHash
+      ).toBeDefined();
+      expect(
+        response.data.data.generateNewPassword.user.passwordHash
+      ).not.toEqual(user.passwordHash);
+      done();
+    });
+
+    it("should validly update a password", async done => {
+      const query = `
+      mutation updatePassword($password: String!) {
+        updatePassword(password: $password) {
+          _id
+          username
+          createdNodes {
+            _id
+          }
+          email
+          passwordHash
+          createdAt
+          updatedAt
+        }
+      }`;
+      const user = await testHelper.createTestUser({
+        username: "updatepass",
+        email: "passupdate@test.com"
+      });
+      const jwt = await testHelper.getJWT({ email: user.email });
+      const data = { query, variables: { password: "newpass" } };
+      const response = await client.post("/graphql", data, {
+        headers: { authorization: jwt }
+      });
+      expect(response.status).toBe(200);
+      expect(response.data.data.updatePassword._id).toEqual("" + user._id);
+      expect(response.data.data.updatePassword.createdAt).toBeLessThan(
+        response.data.data.updatePassword.updatedAt
+      );
+      expect(response.data.data.updatePassword.createdNodes).toEqual([]);
+      expect(response.data.data.updatePassword.email).toEqual(user.email);
+      expect(response.data.data.updatePassword.passwordHash).not.toEqual(
+        user.passwordHash
+      );
+      expect(response.data.data.updatePassword.username).toEqual(user.username);
       done();
     });
   });

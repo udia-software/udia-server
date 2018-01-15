@@ -2,7 +2,11 @@
 
 const Auth = require("../../src/modules/Auth");
 const UserManager = require("../../src/modules/UserManager");
-const { EMAIL_TOKEN_TIMEOUT } = require("../../src/constants");
+const {
+  EMAIL_TOKEN_TIMEOUT,
+  TOKEN_TYPE_VERIFY_EMAIL,
+  TOKEN_TYPE_RESET_PASSWORD
+} = require("../../src/constants");
 const { ValidationError } = require("../../src/modules/Errors");
 const testHelper = require("../testhelper");
 
@@ -113,9 +117,15 @@ describe("Auth Module", () => {
 
   it("should generate and handle email validation tokens", async done => {
     const user = await testHelper.createTestUser({ email: "test@test.com" });
-    const emailValidationToken = Auth.generateEmailValidationToken(user);
+    const emailValidationToken = Auth.generateValidationToken(
+      user,
+      TOKEN_TYPE_VERIFY_EMAIL
+    );
     expect(typeof emailValidationToken).toBe("string");
-    const decryptedToken = Auth.decryptAndParseEmailValidationToken(emailValidationToken);
+    const decryptedToken = Auth.decryptAndParseValidationToken(
+      emailValidationToken,
+      TOKEN_TYPE_VERIFY_EMAIL
+    );
     expect(decryptedToken).toBeDefined();
     expect(decryptedToken._id).toEqual("" + user._id);
     expect(decryptedToken.email).toEqual(user.email);
@@ -126,11 +136,25 @@ describe("Auth Module", () => {
 
   it("should generate and handle invalid email validation tokens", async done => {
     const user = await testHelper.createTestUser({ email: "test@test.com" });
-    const emailValidationToken = Auth.generateEmailValidationToken(user);
+    const emailValidationToken = Auth.generateValidationToken(
+      user,
+      TOKEN_TYPE_VERIFY_EMAIL
+    );
     expect(
-      Auth.decryptAndParseEmailValidationToken(`corrupt${emailValidationToken}`)
+      Auth.decryptAndParseValidationToken(
+        emailValidationToken,
+        TOKEN_TYPE_RESET_PASSWORD
+      )
     ).toBe(null);
-    expect(Auth.decryptAndParseEmailValidationToken("")).toBe(null);
+    expect(
+      Auth.decryptAndParseValidationToken(
+        `corrupt${emailValidationToken}`,
+        TOKEN_TYPE_VERIFY_EMAIL
+      )
+    ).toBe(null);
+    expect(
+      Auth.decryptAndParseValidationToken("", TOKEN_TYPE_VERIFY_EMAIL)
+    ).toBe(null);
     done();
   });
 });

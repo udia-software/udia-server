@@ -61,6 +61,16 @@ module.exports = {
     signinUser: async (_root, { email: { email, password } }, { Users }) => {
       return await authenticateUser(password, email, Users);
     },
+    forgotPassword: async (_root, { email }, { Users }) => {
+      return await Users.forgotPasswordRequest(email);
+    },
+    generateNewPassword: async (_root, { token, password }, { Users }) => {
+      const user = await Users.updatePasswordWithToken(token, password);
+      return await authenticateUser(password, user.email, Users);
+    },
+    updatePassword: async (_root, { password }, { Users, user }) => {
+      return await Users.updatePassword(user, password);
+    },
     resendConfirmationEmail: async (_root, _params, { Users, user }) => {
       return await Users.resendConfirmationEmail(user);
     },

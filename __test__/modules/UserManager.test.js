@@ -5,7 +5,11 @@ const MockDate = require("mockdate");
 const UserManager = require("../../src/modules/UserManager");
 const Auth = require("../../src/modules/Auth");
 const { ValidationError } = require("../../src/modules/Errors");
-const { EMAIL_TOKEN_TIMEOUT } = require("../../src/constants");
+const {
+  EMAIL_TOKEN_TIMEOUT,
+  TOKEN_TYPE_VERIFY_EMAIL,
+  TOKEN_TYPE_RESET_PASSWORD
+} = require("../../src/constants");
 const testHelper = require("../testhelper");
 
 let db = null;
@@ -53,7 +57,7 @@ describe("UserManager Module", () => {
         username: "confirm"
       });
       expect(user.emailVerified).toBe(false);
-      const token = Auth.generateEmailValidationToken(user);
+      const token = Auth.generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
       const emailConfirmStatus = await userManager.confirmEmail(token);
       expect(emailConfirmStatus).toBe(true);
       user = await userManager.getUserById(user._id, true);
@@ -68,7 +72,7 @@ describe("UserManager Module", () => {
       });
       expect(user.emailVerified).toBe(false);
       expect(await userManager.resendConfirmationEmail(user)).toBe(true);
-      const token = Auth.generateEmailValidationToken(user);
+      const token = Auth.generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
       await userManager.confirmEmail(token);
       user = await userManager.getUserById(user._id);
       expect(await userManager.resendConfirmationEmail(user)).toBe(false);
@@ -81,13 +85,49 @@ describe("UserManager Module", () => {
         username: "emailChange"
       });
       expect(user.emailVerified).toBe(false);
-      const token = Auth.generateEmailValidationToken(user);
+      const token = Auth.generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
       await userManager.confirmEmail(token);
       user = await userManager.getUserById(user._id);
       expect(user.emailVerified).toBe(true);
       user = await userManager.changeEmail(user, "newEmail@test.com");
       expect(user.email).toEqual("newEmail@test.com");
       expect(user.emailVerified).toBe(false);
+      done();
+    });
+
+    it("should send a forgot password email when valid", async done => {
+      const userEmail = "forgotpass@test.com";
+      await testHelper.createTestUser({ email: userEmail });
+      const sentEmail = await userManager.forgotPasswordRequest(userEmail);
+      expect(sentEmail).toBe(true);
+      const dontSendEmail = await userManager.forgotPasswordRequest(
+        `not${userEmail}`
+      );
+      expect(dontSendEmail).toBe(false);
+      done();
+    });
+
+    it("should update a password via token when valid", async done => {
+      const userEmail = "forgetpass@test.com";
+      const newPass = "newpass";
+      let user = await testHelper.createTestUser({
+        email: userEmail,
+        username: "forgetme"
+      });
+      const oldPassHash = user.passwordHash;
+      const passResetToken = Auth.generateValidationToken(
+        user,
+        TOKEN_TYPE_RESET_PASSWORD
+      );
+      user = await userManager.updatePasswordWithToken(passResetToken, newPass);
+      expect(oldPassHash).not.toEqual(user.passwordHash);
+      const authPayload = await Auth.authenticateUser(
+        newPass,
+        userEmail,
+        userManager
+      );
+      expect(authPayload.user._id).toEqual(user._id);
+      expect(authPayload.token).toBeDefined();
       done();
     });
 
@@ -161,13 +201,15 @@ describe("UserManager Module", () => {
       done();
     });
 
-    it("should error on creating user with no password", async done => {
+    it("should error on creating user with weak password", async done => {
       const username = "No_Password_User";
-      const rawPassword = "";
       const email = "test@test.com";
 
+      await expect(userManager.createUser(username, email, "")).rejects.toEqual(
+        new ValidationError()
+      );
       await expect(
-        userManager.createUser(username, email, rawPassword)
+        userManager.createUser(username, email, "weak")
       ).rejects.toEqual(new ValidationError());
       done();
     });
@@ -178,7 +220,7 @@ describe("UserManager Module", () => {
         username: "confirm"
       });
       expect(user.emailVerified).toBe(false);
-      const token = Auth.generateEmailValidationToken(user);
+      const token = Auth.generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
       await userManager._deleteUserById(user._id);
       const emailConfirmStatus = await userManager.confirmEmail(token);
       expect(emailConfirmStatus).toBe(false);
@@ -191,7 +233,7 @@ describe("UserManager Module", () => {
         username: "confirm"
       });
       expect(user.emailVerified).toBe(false);
-      const token = Auth.generateEmailValidationToken(user);
+      const token = Auth.generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
       const emailConfirmStatus = await userManager.confirmEmail(
         `corrupt${token}`
       );
@@ -205,7 +247,7 @@ describe("UserManager Module", () => {
         username: "confirm"
       });
       expect(user.emailVerified).toBe(false);
-      const token = Auth.generateEmailValidationToken(user);
+      const token = Auth.generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
       MockDate.set(new Date(Date.now() + +EMAIL_TOKEN_TIMEOUT));
       const emailConfirmStatus = await userManager.confirmEmail(token);
       expect(emailConfirmStatus).toBe(false);
@@ -250,6 +292,36 @@ describe("UserManager Module", () => {
       await expect(
         userManager.changeEmail(null, "how@test.com")
       ).rejects.toEqual(new ValidationError());
+      done();
+    });
+
+    it("should error when updating password via invalid token", async done => {
+      const userEmail = "forgetpass@test.com";
+      const newPass = "newpass";
+      let user = await testHelper.createTestUser({
+        email: userEmail,
+        username: "forgetme"
+      });
+      const passResetToken = Auth.generateValidationToken(
+        user,
+        TOKEN_TYPE_VERIFY_EMAIL
+      );
+      await expect(
+        userManager.updatePasswordWithToken(passResetToken, newPass)
+      ).rejects.toEqual(new ValidationError([]));
+      done();
+    });
+
+    it("should error when updating password via weak pass", async done => {
+      const userEmail = "weakpass@test.com";
+      const weakPass = "pass";
+      let user = await testHelper.createTestUser({
+        email: userEmail,
+        username: "forgetme"
+      });
+      await expect(
+        userManager.updatePassword(user, weakPass)
+      ).rejects.toEqual(new ValidationError([]));
       done();
     });
   });

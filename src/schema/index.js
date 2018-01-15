@@ -99,7 +99,7 @@ const typeDefs = `
     createNode(
       dataType: NodeDataType!,
       relationType: NodeRelationType!,
-      title: String!,
+      title: String,
       content: String!,
       parentId: ID
     ): Node!
@@ -116,8 +116,9 @@ const typeDefs = `
       password: String!
     ): SigninPayload!
     signinUser(email: AUTH_PROVIDER_EMAIL): SigninPayload!
-    forgotPassword(email: String!): Boolean
-    changePassword(password: String!): FullUser!
+    forgotPassword(email: String!): Boolean!
+    generateNewPassword(token: String!, password: String!): SigninPayload!
+    updatePassword(password: String!): FullUser!
     resendConfirmationEmail: Boolean!
     confirmEmail(token: String!): Boolean!
     changeEmail(email: String!): FullUser!

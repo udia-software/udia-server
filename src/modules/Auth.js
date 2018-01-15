@@ -67,11 +67,13 @@ async function authenticateUser(rawPassword, email, Users) {
 }
 
 /**
- * Given a user, generate the email verification token.
+ * Given a user, and type of token, generate the verification token.
  * @param {*} user - Mongo Document for user object
+ * @param {string} type - Type of the token to send
  */
-function generateEmailValidationToken(user) {
+function generateValidationToken(user, type) {
   const rawValidationToken = {
+    type,
     email: "" + user.email,
     _id: "" + user._id,
     exp: Date.now() + +EMAIL_TOKEN_TIMEOUT
@@ -86,12 +88,16 @@ function generateEmailValidationToken(user) {
 /**
  * Given a user and an email verification token, test if token is valid.
  * @param {string} token - Email verification Token
- * @param {*} user - Mongo Document for user object
+ * @param {string} type - Type of the token to validate
  */
-function decryptAndParseEmailValidationToken(token) {
+function decryptAndParseValidationToken(token, type) {
   try {
     const bytes = crypto.AES.decrypt(token, JWT_SECRET);
-    return JSON.parse(bytes.toString(crypto.enc.Utf8));
+    const tokenObj = JSON.parse(bytes.toString(crypto.enc.Utf8));
+    if (tokenObj.type === type) {
+      return tokenObj;
+    }
+    return null;
   } catch (err) {
     return null;
   }
@@ -101,6 +107,6 @@ module.exports = {
   hashPassword,
   verifyUserJWT,
   authenticateUser,
-  generateEmailValidationToken,
-  decryptAndParseEmailValidationToken
+  generateValidationToken,
+  decryptAndParseValidationToken
 };
