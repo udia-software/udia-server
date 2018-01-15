@@ -50,8 +50,8 @@ async function sendEmailVerification(user, validationToken) {
       address: user.email
     },
     subject: "[UDIA] Validate Your Email",
-    text: `This is your validation token. It is valid four hours after request generation.\n${validationToken}`,
-    html: `<p>This is your validation token. It is valid four hours after request generation.</p></p>${validationToken}</p>`
+    text: `This is your validation token. It is valid one hour after request generation.\n${validationToken}`,
+    html: `<p>This is your validation token. It is valid one hour after request generation.</p></p>${validationToken}</p>`
   };
   try {
     return await transport.sendMail(payload);
@@ -63,6 +63,31 @@ async function sendEmailVerification(user, validationToken) {
   }
 }
 
+async function sendForgotPasswordEmail(user, validationToken) {
+  const payload = {
+    from: {
+      name: "UDIA Server",
+      address: "server@udia.ca"
+    },
+    to: {
+      name: user.username,
+      address: user.email
+    },
+    subject: "[UDIA] Reset Your Password",
+    text: `This is your password reset token. It is valid one hour after request generation.\n${validationToken}`,
+    html: `<p>This is your password reset token. It is valid one hour after request generation.</p></p>${validationToken}</p>`
+  };
+  try {
+    return await transport.sendMail(payload);
+  } catch (err) {
+    // coverage don't care about send mail failure, tests never fails
+    /* istanbul ignore next */
+    // eslint-disable-next-line no-console
+    console.error("sendForgotPasswordEmail failed", err);
+  }
+}
+
 module.exports = {
-  sendEmailVerification
+  sendEmailVerification,
+  sendForgotPasswordEmail
 };

@@ -2,14 +2,18 @@
 
 const DataLoader = require("dataloader");
 const { ObjectID } = require("mongodb");
-const { EMAIL_TOKEN_TIMEOUT } = require("../constants");
+const {
+  EMAIL_TOKEN_TIMEOUT,
+  TOKEN_TYPE_VERIFY_EMAIL,
+  TOKEN_TYPE_RESET_PASSWORD
+} = require("../constants");
 const {
   hashPassword,
-  generateEmailValidationToken,
-  decryptAndParseEmailValidationToken
+  generateValidationToken,
+  decryptAndParseValidationToken
 } = require("./Auth");
 const { ValidationError } = require("./Errors");
-const { sendEmailVerification } = require("../mailer");
+const { sendEmailVerification, sendForgotPasswordEmail } = require("../mailer");
 
 class UserManager {
   constructor(userCollection) {
@@ -17,6 +21,22 @@ class UserManager {
     this.userLoader = new DataLoader(userIds => this._batchUsers(userIds), {
       cacheKeyFn: key => key.toString()
     });
+  }
+
+  /**
+   * Auth Validation, check if the user is authenticated (existance of _id)
+   * @param {*} user - Mongo Document containing user
+   * @param {Array} errors - Array of errors
+   */
+  static validateAuthenticated(user, errors) {
+    const userId = user && user._id;
+    if (!userId) {
+      errors.push({
+        key: "createdBy",
+        message: "User must be authenticated."
+      });
+    }
+    return userId;
   }
 
   /**
@@ -58,30 +78,14 @@ class UserManager {
   }
 
   /**
-   * Function for dataloader to batch lookup of users
-   * @param {Array<string>} keys - Arrays of user ids to batch lookup
+   * Username Validation
+   * Check Username not already taken, Username is not empty
+   * Check username is alpha numeric with underscores
+   * Check username length is under 16 chars
+   * @param {string} username - proposed username for a user
+   * @param {*} errors - array of errors
    */
-  async _batchUsers(keys) {
-    return await this.collection
-      .find({ _id: { $in: keys.map(key => new ObjectID(key)) } })
-      .toArray()
-      .then(users => keys.map(id => users.find(u => u._id.equals(id)) || null));
-  }
-
-  /**
-   * Create a user and store in the DB
-   * @param {string} username - Username of the user
-   * @param {string} email - Email of the user
-   * @param {string} password - Raw Password of the user
-   */
-  async createUser(username, email, password) {
-    const errors = [];
-
-    // Username Validation
-    // * Username not already taken
-    // * Username is not empty
-    // * Check username is alpha numeric with underscores
-    // * Check username length is under 16 chars
+  async validateUsername(username, errors) {
     const existingUsername = await this.collection
       .find({ username: { $regex: new RegExp(`^${username}$`, "i") } })
       .toArray();
@@ -108,17 +112,51 @@ class UserManager {
         message: "Username cannot be over 15 characters long."
       });
     }
+  }
 
-    await this.validateEmail(email, errors);
-
-    // Password Validation
-    // * Password is not empty
+  /**
+   * Password Validation
+   * Password is not empty and is greater than 6 characters.
+   * @param {*} password
+   * @param {*} errors
+   */
+  static validatePassword(password, errors) {
     if (!password) {
       errors.push({
         key: "password",
         message: "Password cannot be empty."
       });
+    } else if (password.length < 6) {
+      errors.push({
+        key: "password",
+        message: "Password must be 6 or more characters."
+      });
     }
+  }
+
+  /**
+   * Function for dataloader to batch lookup of users
+   * @param {Array<string>} keys - Arrays of user ids to batch lookup
+   */
+  async _batchUsers(keys) {
+    return await this.collection
+      .find({ _id: { $in: keys.map(key => new ObjectID(key)) } })
+      .toArray()
+      .then(users => keys.map(id => users.find(u => u._id.equals(id)) || null));
+  }
+
+  /**
+   * Create a user and store in the DB
+   * @param {string} username - Username of the user
+   * @param {string} email - Email of the user
+   * @param {string} password - Raw Password of the user
+   */
+  async createUser(username, email, password) {
+    const errors = [];
+
+    await this.validateUsername(username, errors);
+    await this.validateEmail(email, errors);
+    UserManager.validatePassword(password, errors);
 
     if (errors.length) {
       throw new ValidationError(errors);
@@ -136,30 +174,28 @@ class UserManager {
     };
     const response = await this.collection.insert(userData);
     const newUser = Object.assign({ _id: response.insertedIds[0] }, userData);
-    await sendEmailVerification(newUser, generateEmailValidationToken(newUser));
+    await sendEmailVerification(
+      newUser,
+      generateValidationToken(newUser, TOKEN_TYPE_VERIFY_EMAIL)
+    );
     return newUser;
   }
 
   async changeEmail(user, email) {
     const errors = [];
-    if (!user) {
-      errors.push({
-        key: "user",
-        message: "User must be authenticated."
-      });
-    }
+    UserManager.validateAuthenticated(user, errors);
     await this.validateEmail(email, errors, user);
     if (errors.length) {
       throw new ValidationError(errors);
     }
     await this.collection.update(
       { _id: user._id },
-      { $set: { email, emailVerified: false } }
+      { $set: { email, emailVerified: false, updatedAt: new Date() } }
     );
     const updatedUser = await this.getUserById(user._id, true);
     await sendEmailVerification(
       updatedUser,
-      generateEmailValidationToken(updatedUser)
+      generateValidationToken(updatedUser, TOKEN_TYPE_VERIFY_EMAIL)
     );
     return updatedUser;
   }
@@ -169,8 +205,9 @@ class UserManager {
    * @param {string} emailValidationToken - validation token sent to their email
    */
   async confirmEmail(emailValidationToken) {
-    const decryptedToken = decryptAndParseEmailValidationToken(
-      emailValidationToken
+    const decryptedToken = decryptAndParseValidationToken(
+      emailValidationToken,
+      TOKEN_TYPE_VERIFY_EMAIL
     );
     if (decryptedToken && decryptedToken._id) {
       const user = await this.getUserById(decryptedToken._id);
@@ -184,7 +221,7 @@ class UserManager {
         await this.collection.update(
           { _id: user._id },
           {
-            $set: { emailVerified: true }
+            $set: { emailVerified: true, updatedAt: new Date() }
           }
         );
         this.userLoader.clear("" + user._id);
@@ -200,16 +237,75 @@ class UserManager {
    * @param {*} user - Mongo Document representing user
    */
   async resendConfirmationEmail(user) {
-    if (!user) {
-      throw new ValidationError([
-        { key: "user", message: "User must be authenticated." }
-      ]);
+    const errors = [];
+    UserManager.validateAuthenticated(user, errors);
+    if (errors.length) {
+      throw new ValidationError(errors);
     }
     if (!user.emailVerified) {
-      await sendEmailVerification(user, generateEmailValidationToken(user));
+      await sendEmailVerification(
+        user,
+        generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL)
+      );
       return true;
     }
     return false;
+  }
+
+  /**
+   * Check for user with the forgotten email, then send password reset token
+   * @param {string} email - email of user with forgotten password
+   */
+  async forgotPasswordRequest(email) {
+    const user = await this.getUserByEmail(email);
+    if (user && user._id) {
+      await sendForgotPasswordEmail(
+        user,
+        generateValidationToken(user, TOKEN_TYPE_RESET_PASSWORD)
+      );
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Update a password using a forgot password token
+   * @param {string} token - password reset verification token
+   * @param {string} password - new password
+   */
+  async updatePasswordWithToken(token, password) {
+    const decryptedToken = decryptAndParseValidationToken(
+      token,
+      TOKEN_TYPE_RESET_PASSWORD
+    );
+    if (!decryptedToken) {
+      throw new ValidationError([
+        { key: "token", message: "Invalid password reset token." }
+      ]);
+    }
+    const user = await this.getUserById(decryptedToken && decryptedToken._id);
+    return await this.updatePassword(user, password);
+  }
+
+  /**
+   * Update a password using the authenticated user object
+   * @param {*} user - Mongo DB document representing user
+   * @param {string} password - new password
+   */
+  async updatePassword(user, password) {
+    const errors = [];
+    UserManager.validatePassword(password, errors);
+    UserManager.validateAuthenticated(user, errors);
+    if (errors.length) {
+      throw new ValidationError(errors);
+    }
+    const passwordHash = await hashPassword(password);
+    await this.collection.update(
+      { _id: user._id },
+      { $set: { passwordHash, updatedAt: new Date() } }
+    );
+    this.userLoader.clear("" + user._id);
+    return await this.getUserById(user._id);
   }
 
   /**

@@ -60,10 +60,11 @@ class NodeManager {
   /**
    * Title Validation, check if title is empty
    * @param {string} title - String representation of title
+   * @param {string} relationType - String representation of relation type
    * @param {Array} errors - Array of errors
    */
-  static validateTitle(title, errors) {
-    if (!title || !title.trim()) {
+  static validateTitle(title, relationType, errors) {
+    if (relationType !== "COMMENT" && !title || !title.trim()) {
       errors.push({
         key: "title",
         message: "Title must not be empty."
@@ -217,7 +218,7 @@ class NodeManager {
     const createdById = NodeManager.validateAuthenticated(createdBy, errors);
     NodeManager.validateDataType(dataType, errors);
     NodeManager.validateRelationType(relationType, errors);
-    NodeManager.validateTitle(title, errors);
+    NodeManager.validateTitle(title, relationType, errors);
     NodeManager.validateContent(content, errors);
     NodeManager.validateURL(dataType, content, errors);
     const parentIdValidated = await this.validateParent(parentId, errors);
@@ -269,7 +270,11 @@ class NodeManager {
       dataType || (toUpdateNode || {}).dataType,
       errors
     );
-    NodeManager.validateTitle(title || (toUpdateNode || {}).title, errors);
+    NodeManager.validateTitle(
+      title || (toUpdateNode || {}).title,
+      (toUpdateNode || {}).relationType,
+      errors
+    );
     NodeManager.validateContent(
       content || (toUpdateNode || {}).content,
       errors
