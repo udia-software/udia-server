@@ -2,11 +2,7 @@
 
 const DataLoader = require("dataloader");
 const { ObjectID } = require("mongodb");
-const {
-  EMAIL_TOKEN_TIMEOUT,
-  TOKEN_TYPE_VERIFY_EMAIL,
-  TOKEN_TYPE_RESET_PASSWORD
-} = require("../constants");
+const { EMAIL_TOKEN_TIMEOUT, TOKEN_TYPES } = require("../constants");
 const {
   hashPassword,
   generateValidationToken,
@@ -176,7 +172,7 @@ class UserManager {
     const newUser = Object.assign({ _id: response.insertedIds[0] }, userData);
     await sendEmailVerification(
       newUser,
-      generateValidationToken(newUser, TOKEN_TYPE_VERIFY_EMAIL)
+      generateValidationToken(newUser, TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL)
     );
     return newUser;
   }
@@ -195,7 +191,7 @@ class UserManager {
     const updatedUser = await this.getUserById(user._id, true);
     await sendEmailVerification(
       updatedUser,
-      generateValidationToken(updatedUser, TOKEN_TYPE_VERIFY_EMAIL)
+      generateValidationToken(updatedUser, TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL)
     );
     return updatedUser;
   }
@@ -207,7 +203,7 @@ class UserManager {
   async confirmEmail(emailValidationToken) {
     const decryptedToken = decryptAndParseValidationToken(
       emailValidationToken,
-      TOKEN_TYPE_VERIFY_EMAIL
+      TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
     );
     if (decryptedToken && decryptedToken._id) {
       const user = await this.getUserById(decryptedToken._id);
@@ -245,7 +241,7 @@ class UserManager {
     if (!user.emailVerified) {
       await sendEmailVerification(
         user,
-        generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL)
+        generateValidationToken(user, TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL)
       );
       return true;
     }
@@ -261,7 +257,7 @@ class UserManager {
     if (user && user._id) {
       await sendForgotPasswordEmail(
         user,
-        generateValidationToken(user, TOKEN_TYPE_RESET_PASSWORD)
+        generateValidationToken(user, TOKEN_TYPES.TOKEN_TYPE_RESET_PASSWORD)
       );
       return true;
     }
@@ -276,7 +272,7 @@ class UserManager {
   async updatePasswordWithToken(token, password) {
     const decryptedToken = decryptAndParseValidationToken(
       token,
-      TOKEN_TYPE_RESET_PASSWORD
+      TOKEN_TYPES.TOKEN_TYPE_RESET_PASSWORD
     );
     if (!decryptedToken) {
       throw new ValidationError([

@@ -5,11 +5,7 @@ const MockDate = require("mockdate");
 const UserManager = require("../../src/modules/UserManager");
 const Auth = require("../../src/modules/Auth");
 const { ValidationError } = require("../../src/modules/Errors");
-const {
-  EMAIL_TOKEN_TIMEOUT,
-  TOKEN_TYPE_VERIFY_EMAIL,
-  TOKEN_TYPE_RESET_PASSWORD
-} = require("../../src/constants");
+const { EMAIL_TOKEN_TIMEOUT, TOKEN_TYPES } = require("../../src/constants");
 const testHelper = require("../testhelper");
 
 let db = null;
@@ -57,7 +53,10 @@ describe("UserManager Module", () => {
         username: "confirm"
       });
       expect(user.emailVerified).toBe(false);
-      const token = Auth.generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
+      const token = Auth.generateValidationToken(
+        user,
+        TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
+      );
       const emailConfirmStatus = await userManager.confirmEmail(token);
       expect(emailConfirmStatus).toBe(true);
       user = await userManager.getUserById(user._id, true);
@@ -72,7 +71,10 @@ describe("UserManager Module", () => {
       });
       expect(user.emailVerified).toBe(false);
       expect(await userManager.resendConfirmationEmail(user)).toBe(true);
-      const token = Auth.generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
+      const token = Auth.generateValidationToken(
+        user,
+        TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
+      );
       await userManager.confirmEmail(token);
       user = await userManager.getUserById(user._id);
       expect(await userManager.resendConfirmationEmail(user)).toBe(false);
@@ -85,7 +87,10 @@ describe("UserManager Module", () => {
         username: "emailChange"
       });
       expect(user.emailVerified).toBe(false);
-      const token = Auth.generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
+      const token = Auth.generateValidationToken(
+        user,
+        TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
+      );
       await userManager.confirmEmail(token);
       user = await userManager.getUserById(user._id);
       expect(user.emailVerified).toBe(true);
@@ -117,7 +122,7 @@ describe("UserManager Module", () => {
       const oldPassHash = user.passwordHash;
       const passResetToken = Auth.generateValidationToken(
         user,
-        TOKEN_TYPE_RESET_PASSWORD
+        TOKEN_TYPES.TOKEN_TYPE_RESET_PASSWORD
       );
       user = await userManager.updatePasswordWithToken(passResetToken, newPass);
       expect(oldPassHash).not.toEqual(user.passwordHash);
@@ -220,7 +225,10 @@ describe("UserManager Module", () => {
         username: "confirm"
       });
       expect(user.emailVerified).toBe(false);
-      const token = Auth.generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
+      const token = Auth.generateValidationToken(
+        user,
+        TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
+      );
       await userManager._deleteUserById(user._id);
       const emailConfirmStatus = await userManager.confirmEmail(token);
       expect(emailConfirmStatus).toBe(false);
@@ -233,7 +241,10 @@ describe("UserManager Module", () => {
         username: "confirm"
       });
       expect(user.emailVerified).toBe(false);
-      const token = Auth.generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
+      const token = Auth.generateValidationToken(
+        user,
+        TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
+      );
       const emailConfirmStatus = await userManager.confirmEmail(
         `corrupt${token}`
       );
@@ -247,7 +258,10 @@ describe("UserManager Module", () => {
         username: "confirm"
       });
       expect(user.emailVerified).toBe(false);
-      const token = Auth.generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
+      const token = Auth.generateValidationToken(
+        user,
+        TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
+      );
       MockDate.set(new Date(Date.now() + +EMAIL_TOKEN_TIMEOUT));
       const emailConfirmStatus = await userManager.confirmEmail(token);
       expect(emailConfirmStatus).toBe(false);
@@ -304,7 +318,7 @@ describe("UserManager Module", () => {
       });
       const passResetToken = Auth.generateValidationToken(
         user,
-        TOKEN_TYPE_VERIFY_EMAIL
+        TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
       );
       await expect(
         userManager.updatePasswordWithToken(passResetToken, newPass)
@@ -319,9 +333,9 @@ describe("UserManager Module", () => {
         email: userEmail,
         username: "forgetme"
       });
-      await expect(
-        userManager.updatePassword(user, weakPass)
-      ).rejects.toEqual(new ValidationError([]));
+      await expect(userManager.updatePassword(user, weakPass)).rejects.toEqual(
+        new ValidationError([])
+      );
       done();
     });
   });

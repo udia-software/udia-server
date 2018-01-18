@@ -2,6 +2,7 @@
 
 const { Kind } = require("graphql/language");
 const { authenticateUser } = require("../modules/Auth");
+const { AUDIT_ACTIVITIES } = require("../constants");
 const pubSub = require("../pubsub");
 
 module.exports = {
@@ -17,7 +18,7 @@ module.exports = {
     createNode: async (
       _root,
       { dataType, relationType, title, content, parentId },
-      { Nodes, user }
+      { Audits, Nodes, user, originIp }
     ) => {
       const newNode = await Nodes.createNode(
         user,
@@ -28,12 +29,18 @@ module.exports = {
         parentId
       );
       pubSub.publish("Node", { Node: { mutation: "CREATED", node: newNode } });
+      await Audits.createAuditRecord(
+        AUDIT_ACTIVITIES.CREATE_NODE,
+        originIp,
+        user,
+        newNode
+      );
       return newNode;
     },
     updateNode: async (
       _root,
       { id, dataType, title, content },
-      { Nodes, user }
+      { Audits, Nodes, user, originIp }
     ) => {
       const updatedNode = await Nodes.updateNode(
         id,
@@ -45,40 +52,132 @@ module.exports = {
       pubSub.publish("Node", {
         Node: { mutation: "UPDATED", node: updatedNode }
       });
+      await Audits.createAuditRecord(
+        AUDIT_ACTIVITIES.UPDATE_NODE,
+        originIp,
+        user,
+        updatedNode
+      );
       return updatedNode;
     },
-    deleteNode: async (_root, { id }, { Nodes, user }) => {
+    deleteNode: async (_root, { id }, { Audits, Nodes, user, originIp }) => {
       const deletedNode = await Nodes.deleteNode(id, user);
       pubSub.publish("Node", {
         Node: { mutation: "UPDATED", node: deletedNode }
       });
+      await Audits.createAuditRecord(
+        AUDIT_ACTIVITIES.DELETE_NODE,
+        originIp,
+        user,
+        deletedNode
+      );
       return deletedNode;
     },
-    createUser: async (_root, { email, username, password }, { Users }) => {
-      await Users.createUser(username, email, password);
+    createUser: async (
+      _root,
+      { email, username, password },
+      { Audits, Users, originIp }
+    ) => {
+      const user = await Users.createUser(username, email, password);
+      await Audits.createAuditRecord(
+        AUDIT_ACTIVITIES.CREATE_USER,
+        originIp,
+        user
+      );
       return await authenticateUser(password, email, Users);
     },
-    signinUser: async (_root, { email: { email, password } }, { Users }) => {
-      return await authenticateUser(password, email, Users);
+    signinUser: async (
+      _root,
+      { email: { email, password } },
+      { Audits, Users, originIp }
+    ) => {
+      await Audits.createAuditRecord(
+        AUDIT_ACTIVITIES.LOGIN_ATTEMPT,
+        originIp,
+        null,
+        null,
+        { email }
+      );
+      const authPayload = await authenticateUser(password, email, Users);
+      await Audits.createAuditRecord(
+        AUDIT_ACTIVITIES.LOGIN_SUCCESS,
+        originIp,
+        authPayload.user
+      );
+      return authPayload;
     },
-    forgotPassword: async (_root, { email }, { Users }) => {
+    forgotPassword: async (_root, { email }, { Audits, Users, originIp }) => {
+      await Audits.createAuditRecord(
+        AUDIT_ACTIVITIES.RESET_PASSWORD_REQUEST,
+        originIp,
+        null,
+        null,
+        { email }
+      );
       return await Users.forgotPasswordRequest(email);
     },
-    generateNewPassword: async (_root, { token, password }, { Users }) => {
+    generateNewPassword: async (
+      _root,
+      { token, password },
+      { Audits, Users, originIp }
+    ) => {
       const user = await Users.updatePasswordWithToken(token, password);
+      await Audits.createAuditRecord(
+        AUDIT_ACTIVITIES.TOKEN_CHANGE_PASSWORD,
+        originIp,
+        user
+      );
       return await authenticateUser(password, user.email, Users);
     },
-    updatePassword: async (_root, { password }, { Users, user }) => {
+    updatePassword: async (
+      _root,
+      { password },
+      { Audits, Users, user, originIp }
+    ) => {
+      await Audits.createAuditRecord(
+        AUDIT_ACTIVITIES.CHANGE_PASSWORD,
+        originIp,
+        user
+      );
       return await Users.updatePassword(user, password);
     },
-    resendConfirmationEmail: async (_root, _params, { Users, user }) => {
+    resendConfirmationEmail: async (
+      _root,
+      _params,
+      { Audits, Users, user, originIp }
+    ) => {
+      await Audits.createAuditRecord(
+        AUDIT_ACTIVITIES.RESEND_CONFIRMATION_EMAIL,
+        originIp,
+        user
+      );
       return await Users.resendConfirmationEmail(user);
     },
-    confirmEmail: async (_root, { token }, { Users }) => {
-      return await Users.confirmEmail(token);
+    confirmEmail: async (_root, { token }, { Audits, Users, originIp }) => {
+      const confirmEmailPayload = await Users.confirmEmail(token);
+      await Audits.createAuditRecord(
+        AUDIT_ACTIVITIES.VERIFY_EMAIL,
+        originIp,
+        null,
+        null,
+        { token }
+      );
+      return confirmEmailPayload;
     },
-    changeEmail: async (_root, { email }, { Users, user }) => {
-      return await Users.changeEmail(user, email);
+    changeEmail: async (
+      _root,
+      { email },
+      { Audits, Users, user, originIp }
+    ) => {
+      const changeEmailPayload = await Users.changeEmail(user, email);
+      await Audits.createAuditRecord(
+        AUDIT_ACTIVITIES.CHANGE_EMAIL,
+        originIp,
+        user,
+        null,
+        { email }
+      );
+      return changeEmailPayload;
     }
   },
   Subscription: {

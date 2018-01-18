@@ -12,6 +12,7 @@ const { PORT, NODE_ENV, TEST_JWT, SALT_ROUNDS } = require("./constants");
 const connectMongo = require("./connectMongo");
 const schema = require("./schema");
 const { verifyUserJWT } = require("./modules/Auth");
+const AuditManager = require("./modules/AuditManager");
 const NodeManager = require("./modules/NodeManager");
 const UserManager = require("./modules/UserManager");
 
@@ -55,6 +56,7 @@ const start = async () => {
     const user = await verifyUserJWT(req, userManager);
     return {
       context: {
+        Audits: new AuditManager(db.collection("audits")),
         Users: userManager,
         Nodes: new NodeManager(db.collection("nodes")),
         user,

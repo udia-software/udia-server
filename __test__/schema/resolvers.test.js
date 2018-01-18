@@ -4,11 +4,7 @@ const axios = require("axios");
 const start = require("../../src/index");
 const testHelper = require("../testhelper");
 const { generateValidationToken } = require("../../src/modules/Auth");
-const {
-  PORT,
-  TOKEN_TYPE_VERIFY_EMAIL,
-  TOKEN_TYPE_RESET_PASSWORD
-} = require("../../src/constants");
+const { PORT, TOKEN_TYPES } = require("../../src/constants");
 
 let server = null;
 let client = null;
@@ -627,7 +623,10 @@ describe("Resolvers", () => {
         username: "resolveme",
         email: "resolveme@test.com"
       });
-      const token = generateValidationToken(user, TOKEN_TYPE_VERIFY_EMAIL);
+      const token = generateValidationToken(
+        user,
+        TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
+      );
       const data = {
         query,
         variables: { token }
@@ -741,7 +740,7 @@ describe("Resolvers", () => {
       });
       const passResetToken = generateValidationToken(
         user,
-        TOKEN_TYPE_RESET_PASSWORD
+        TOKEN_TYPES.TOKEN_TYPE_RESET_PASSWORD
       );
       const data = {
         query,
