@@ -2,11 +2,7 @@
 
 const Auth = require("../../src/modules/Auth");
 const UserManager = require("../../src/modules/UserManager");
-const {
-  EMAIL_TOKEN_TIMEOUT,
-  TOKEN_TYPE_VERIFY_EMAIL,
-  TOKEN_TYPE_RESET_PASSWORD
-} = require("../../src/constants");
+const { EMAIL_TOKEN_TIMEOUT, TOKEN_TYPES } = require("../../src/constants");
 const { ValidationError } = require("../../src/modules/Errors");
 const testHelper = require("../testhelper");
 
@@ -119,12 +115,12 @@ describe("Auth Module", () => {
     const user = await testHelper.createTestUser({ email: "test@test.com" });
     const emailValidationToken = Auth.generateValidationToken(
       user,
-      TOKEN_TYPE_VERIFY_EMAIL
+      TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
     );
     expect(typeof emailValidationToken).toBe("string");
     const decryptedToken = Auth.decryptAndParseValidationToken(
       emailValidationToken,
-      TOKEN_TYPE_VERIFY_EMAIL
+      TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
     );
     expect(decryptedToken).toBeDefined();
     expect(decryptedToken._id).toEqual("" + user._id);
@@ -138,22 +134,25 @@ describe("Auth Module", () => {
     const user = await testHelper.createTestUser({ email: "test@test.com" });
     const emailValidationToken = Auth.generateValidationToken(
       user,
-      TOKEN_TYPE_VERIFY_EMAIL
+      TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
     );
     expect(
       Auth.decryptAndParseValidationToken(
         emailValidationToken,
-        TOKEN_TYPE_RESET_PASSWORD
+        TOKEN_TYPES.TOKEN_TYPE_RESET_PASSWORD
       )
     ).toBe(null);
     expect(
       Auth.decryptAndParseValidationToken(
         `corrupt${emailValidationToken}`,
-        TOKEN_TYPE_VERIFY_EMAIL
+        TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
       )
     ).toBe(null);
     expect(
-      Auth.decryptAndParseValidationToken("", TOKEN_TYPE_VERIFY_EMAIL)
+      Auth.decryptAndParseValidationToken(
+        "",
+        TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
+      )
     ).toBe(null);
     done();
   });
