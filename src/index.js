@@ -83,7 +83,7 @@ const start = async () => {
       graphiqlExpress({
         endpointURL: "/graphql",
         passHeader: (jwt && `'Authorization': '${jwt}'`) || null,
-        subscriptionsEndpoint: `ws://0.0.0.0:${PORT}/subscriptions`
+        subscriptionsEndpoint: `ws://localhost:${PORT}/subscriptions`
       })
     );
   }
@@ -95,7 +95,14 @@ const start = async () => {
       {
         execute,
         subscribe,
-        schema
+        schema,
+        onConnect: args => {
+          return {
+            ...args,
+            Nodes: new NodeManager(db.collection("nodes")),
+            Users: new UserManager(db.collection("users"))
+          };
+        }
       },
       {
         server,
@@ -112,7 +119,7 @@ const start = async () => {
 
   server.on("close", async () => {
     // subscriptionServer can be null if server immediately closes
-    subscriptionServer && await subscriptionServer.close();
+    subscriptionServer && (await subscriptionServer.close());
     await _mongo.close();
   });
 

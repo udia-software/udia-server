@@ -141,16 +141,17 @@ const typeDefs = `
   ${"" /* Subscriptions */}
 
   type Subscription {
-    Node(filter: NodeSubscriptionFilter): NodeSubscriptionPayload
+    NodeSubscription(filter: NodeSubscriptionFilter): NodeSubscriptionPayload
   }
   
   input NodeSubscriptionFilter {
     mutation_in: [ModelMutationType!]
+    parentId: ID
   }
 
   type NodeSubscriptionPayload {
     mutation: ModelMutationType!
-    payload: Node!
+    node: Node!
   }
   
   enum ModelMutationType {

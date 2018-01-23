@@ -1,6 +1,7 @@
 "use strict";
 
 const { Kind } = require("graphql/language");
+const { withFilter } = require("graphql-subscriptions");
 const { authenticateUser } = require("../modules/Auth");
 const { AUDIT_ACTIVITIES } = require("../constants");
 const pubSub = require("../pubsub");
@@ -28,7 +29,9 @@ module.exports = {
         content,
         parentId
       );
-      pubSub.publish("Node", { Node: { mutation: "CREATED", node: newNode } });
+      pubSub.publish("Node", {
+        NodeSubscription: { mutation: "CREATED", node: newNode }
+      });
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.CREATE_NODE,
         originIp,
@@ -51,7 +54,7 @@ module.exports = {
         content
       );
       pubSub.publish("Node", {
-        Node: { mutation: "UPDATED", node: updatedNode }
+        NodeSubscription: { mutation: "UPDATED", node: updatedNode }
       });
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.UPDATE_NODE,
@@ -65,7 +68,7 @@ module.exports = {
     deleteNode: async (_root, { id }, { Audits, Nodes, user, originIp }) => {
       const deletedNode = await Nodes.deleteNode(id, user);
       pubSub.publish("Node", {
-        Node: { mutation: "UPDATED", node: deletedNode }
+        NodeSubscription: { mutation: "UPDATED", node: deletedNode }
       });
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.DELETE_NODE,
@@ -189,8 +192,20 @@ module.exports = {
     }
   },
   Subscription: {
-    Node: {
-      subscribe: () => pubSub.asyncIterator("Node")
+    NodeSubscription: {
+      subscribe: withFilter(
+        () => pubSub.asyncIterator("Node"),
+        ({ NodeSubscription }, { filter }, { Nodes }) => {
+          const validChild = Nodes.isNodeIdAChildOfParentId(
+            NodeSubscription.node._id,
+            filter.parentId
+          );
+          return (
+            filter.mutation_in.indexOf(NodeSubscription.mutation) >= 0 &&
+            validChild
+          );
+        }
+      )
     }
   },
   Node: {

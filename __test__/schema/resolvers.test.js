@@ -402,7 +402,7 @@ describe("Resolvers", () => {
           updatedAt
         }
       }`;
-      const data = {
+      let data = {
         query,
         variables: {
           id: node._id,
@@ -411,7 +411,7 @@ describe("Resolvers", () => {
           content: "https://www.udia.ca"
         }
       };
-      const response = await client.post("/graphql", data, {
+      let response = await client.post("/graphql", data, {
         headers: { authorization: jwt }
       });
       expect(response.status).toBe(200);
@@ -434,6 +434,18 @@ describe("Resolvers", () => {
       expect(response.data.data.updateNode.dataType).toEqual("URL");
       expect(response.data.data.updateNode.parent).toBeNull();
       expect(response.data.data.updateNode.relationType).toEqual("POST");
+      data = {
+        query,
+        variables: {
+          id: node._id,
+          dataType: "TEXT"
+        }
+      };
+      response = await client.post("/graphql", data, {
+        headers: { authorization: jwt }
+      });
+      expect(response.status).toBe(200);
+      expect(response.data.data.updateNode.dataType).toEqual("TEXT");
       done();
     });
 
@@ -485,7 +497,7 @@ describe("Resolvers", () => {
             content: null,
             createdAt: null,
             createdBy: null,
-            dataType: "TEXT",
+            dataType: "DELETED",
             parent: null,
             relationType: "POST",
             title: null,

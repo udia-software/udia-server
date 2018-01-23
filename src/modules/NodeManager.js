@@ -64,7 +64,7 @@ class NodeManager {
    * @param {Array} errors - Array of errors
    */
   static validateTitle(title, relationType, errors) {
-    if (relationType !== "COMMENT" && !title || !title.trim()) {
+    if (relationType !== "COMMENT" && (!title || (title && !title.trim()))) {
       errors.push({
         key: "title",
         message: "Title must not be empty."
@@ -136,9 +136,9 @@ class NodeManager {
     errors
   ) {
     if (
-      (dataType === null || dataType === toUpdateNode.dataType) &&
-      (title === null || title === toUpdateNode.title) &&
-      (content === null || content === toUpdateNode.content)
+      (!dataType || dataType === toUpdateNode.dataType) &&
+      (!title || title === toUpdateNode.title) &&
+      (!content || content === toUpdateNode.content)
     ) {
       errors.push({
         key: "_id",
@@ -299,7 +299,15 @@ class NodeManager {
     const now = new Date();
     await this.collection.update(
       { _id: new ObjectID(id) },
-      { $set: { updatedById, updatedAt: now, dataType, title, content } }
+      {
+        $set: {
+          updatedById,
+          updatedAt: now,
+          dataType: dataType || toUpdateNode.dataType,
+          title: title || toUpdateNode.title,
+          content: content || toUpdateNode.content
+        }
+      }
     );
     return await this.getNodeById(id, true);
   }
@@ -324,6 +332,7 @@ class NodeManager {
       { _id: new ObjectID(id) },
       {
         $set: {
+          dataType: "DELETED",
           createdById: null,
           updatedById: null,
           createdAt: null,
@@ -527,6 +536,51 @@ class NodeManager {
       return await this.nodeLoader.load(id);
     }
     return null;
+  }
+
+  /**
+   * Given a node, find out if the potential parent is an actual parent
+   * @param {string} nodeId - Mongo Object ID of child
+   * @param {string?} potentialParentId - Mongo Object ID of potential parent
+   */
+  async isNodeIdAChildOfParentId(nodeId, potentialParentId) {
+    // We are all a child of (null || undefined || false || ""), dear.
+    if (!potentialParentId) {
+      return true;
+    }
+    const result = await this.collection
+      .aggregate([
+        {
+          $graphLookup: {
+            from: "nodes",
+            startWith: "$parentId",
+            connectFromField: "parentId",
+            connectToField: "_id",
+            as: "ancestors"
+          }
+        },
+        { $match: { _id: new ObjectID(nodeId) } },
+        {
+          $addFields: {
+            ancestors: {
+              $map: {
+                input: "$ancestors",
+                as: "t",
+                in: { _id: "$$t._id" }
+              }
+            }
+          }
+        },
+        {
+          $match: {
+            ancestors: {
+              _id: new ObjectID(potentialParentId)
+            }
+          }
+        }
+      ])
+      .toArray();
+    return result.length > 0;
   }
 }
 

@@ -133,7 +133,7 @@ describe("NodeManager Module", () => {
         content: null,
         createdAt: null,
         createdById: null,
-        dataType: "TEXT",
+        dataType: "DELETED",
         parentId: null,
         relationType: "POST",
         title: null,
@@ -653,6 +653,38 @@ describe("NodeManager Module", () => {
       expect(await nodeManager.getNodeById(new ObjectId())).toBeNull();
       expect(await nodeManager.getNodeById("")).toBeNull();
       expect(await nodeManager.getNodeById("bloop")).toBeNull();
+      done();
+    });
+
+    it("should determine child relationship between parent and node", async done => {
+      const createdBy = await testHelper.createTestUser({});
+      const grandparentNode = await testHelper.generateTestNode({ createdBy });
+      const parentNode = await testHelper.generateTestNode({
+        createdBy,
+        parentId: grandparentNode._id
+      });
+      const childNode = await testHelper.generateTestNode({
+        createdBy,
+        parentId: parentNode._id
+      });
+
+      const allChild = await nodeManager.isNodeIdAChildOfParentId(
+        "" + childNode._id,
+        null
+      );
+      expect(allChild).toBe(true);
+
+      const isChild = await nodeManager.isNodeIdAChildOfParentId(
+        "" + childNode._id,
+        "" + grandparentNode._id
+      );
+      expect(isChild).toBe(true);
+
+      const notChild = await nodeManager.isNodeIdAChildOfParentId(
+        "" + grandparentNode._id,
+        "" + childNode._id,
+      );
+      expect(notChild).toBe(false);
       done();
     });
   });
