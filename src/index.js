@@ -112,9 +112,7 @@ const start = async () => {
 
   server.on("close", async () => {
     // subscriptionServer can be null if server immediately closes
-    if (subscriptionServer) {
-      await subscriptionServer.close();
-    }
+    subscriptionServer && await subscriptionServer.close();
     await _mongo.close();
   });
 

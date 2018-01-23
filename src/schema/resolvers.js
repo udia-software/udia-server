@@ -33,7 +33,8 @@ module.exports = {
         AUDIT_ACTIVITIES.CREATE_NODE,
         originIp,
         user,
-        newNode
+        newNode,
+        { dataType, relationType, title, content, parentId }
       );
       return newNode;
     },
@@ -56,7 +57,8 @@ module.exports = {
         AUDIT_ACTIVITIES.UPDATE_NODE,
         originIp,
         user,
-        updatedNode
+        updatedNode,
+        { dataType, title, content }
       );
       return updatedNode;
     },
@@ -82,7 +84,9 @@ module.exports = {
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.CREATE_USER,
         originIp,
-        user
+        user,
+        null,
+        { email, username }
       );
       return await authenticateUser(password, email, Users);
     },
@@ -102,7 +106,9 @@ module.exports = {
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.LOGIN_SUCCESS,
         originIp,
-        authPayload.user
+        authPayload.user,
+        null,
+        { email }
       );
       return authPayload;
     },
@@ -125,7 +131,9 @@ module.exports = {
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.TOKEN_CHANGE_PASSWORD,
         originIp,
-        user
+        user,
+        null,
+        { token }
       );
       return await authenticateUser(password, user.email, Users);
     },
