@@ -25,10 +25,13 @@ async function hashPassword(rawPassword) {
  */
 async function verifyUserJWT({ headers: { authorization } }, Users) {
   const token = authorization || "";
+  return await Users.getUserById(getIdFromJWT(token));
+}
+
+function getIdFromJWT(token) {
   try {
     const tokenPayload = jwt.verify(token, JWT_SECRET);
-    const user = await Users.getUserById(tokenPayload.id);
-    return user;
+    return tokenPayload.id;
   } catch (_) {
     return null;
   }

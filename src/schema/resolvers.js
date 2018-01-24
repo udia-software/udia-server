@@ -2,7 +2,7 @@
 
 const { Kind } = require("graphql/language");
 const { withFilter } = require("graphql-subscriptions");
-const { authenticateUser } = require("../modules/Auth");
+const { authenticateUser, getIdFromJWT } = require("../modules/Auth");
 const { AUDIT_ACTIVITIES } = require("../constants");
 const pubSub = require("../pubsub");
 
@@ -91,6 +91,7 @@ module.exports = {
         null,
         { email, username }
       );
+      pubSub.publish("User", { UserSubscription: { user } });
       return await authenticateUser(password, email, Users);
     },
     signinUser: async (
@@ -113,6 +114,7 @@ module.exports = {
         null,
         { email }
       );
+      pubSub.publish("User", { UserSubscription: { user: authPayload.user } });
       return authPayload;
     },
     forgotPassword: async (_root, { email }, { Audits, Users, originIp }) => {
@@ -138,6 +140,7 @@ module.exports = {
         null,
         { token }
       );
+      pubSub.publish("User", { UserSubscription: { user } });
       return await authenticateUser(password, user.email, Users);
     },
     updatePassword: async (
@@ -150,6 +153,7 @@ module.exports = {
         originIp,
         user
       );
+      pubSub.publish("User", { UserSubscription: { user } });
       return await Users.updatePassword(user, password);
     },
     resendConfirmationEmail: async (
@@ -165,15 +169,16 @@ module.exports = {
       return await Users.resendConfirmationEmail(user);
     },
     confirmEmail: async (_root, { token }, { Audits, Users, originIp }) => {
-      const confirmEmailPayload = await Users.confirmEmail(token);
+      const { user, confirmedEmail } = await Users.confirmEmail(token);
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.VERIFY_EMAIL,
         originIp,
-        null,
+        user,
         null,
         { token }
       );
-      return confirmEmailPayload;
+      pubSub.publish("User", { UserSubscription: { user } });
+      return confirmedEmail;
     },
     changeEmail: async (
       _root,
@@ -188,6 +193,7 @@ module.exports = {
         null,
         { email }
       );
+      pubSub.publish("User", { UserSubscription: { user } });
       return changeEmailPayload;
     }
   },
@@ -204,6 +210,15 @@ module.exports = {
             filter.mutation_in.indexOf(NodeSubscription.mutation) >= 0 &&
             validChild
           );
+        }
+      )
+    },
+    UserSubscription: {
+      subscribe: withFilter(
+        () => pubSub.asyncIterator("User"),
+        ({ UserSubscription }, { filter }, { Users }) => {
+          const userId = getIdFromJWT(filter.jwt);
+          return "" + userId === "" + UserSubscription.user._id;
         }
       )
     }
@@ -226,6 +241,12 @@ module.exports = {
         skip,
         first
       );
+    },
+    countImmediateChildren: async ({ _id }, _data, { Nodes }) => {
+      return await Nodes.countImmediateChildren(_id);
+    },
+    countAllChildren: async ({ _id }, _data, { Nodes }) => {
+      return await Nodes.countAllChildren(_id);
     }
   },
   User: {

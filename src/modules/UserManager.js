@@ -221,10 +221,10 @@ class UserManager {
           }
         );
         this.userLoader.clear("" + user._id);
-        return true;
+        return { user, confirmedEmail: true };
       }
     }
-    return false;
+    return { user: null, confirmedEmail: false };
   }
 
   /**

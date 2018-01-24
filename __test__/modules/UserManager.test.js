@@ -57,8 +57,8 @@ describe("UserManager Module", () => {
         user,
         TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
       );
-      const emailConfirmStatus = await userManager.confirmEmail(token);
-      expect(emailConfirmStatus).toBe(true);
+      const { confirmedEmail } = await userManager.confirmEmail(token);
+      expect(confirmedEmail).toBe(true);
       user = await userManager.getUserById(user._id, true);
       expect(user.emailVerified).toBe(true);
       done();
@@ -230,8 +230,8 @@ describe("UserManager Module", () => {
         TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
       );
       await userManager._deleteUserById(user._id);
-      const emailConfirmStatus = await userManager.confirmEmail(token);
-      expect(emailConfirmStatus).toBe(false);
+      const { confirmedEmail } = await userManager.confirmEmail(token);
+      expect(confirmedEmail).toBe(false);
       done();
     });
 
@@ -245,10 +245,10 @@ describe("UserManager Module", () => {
         user,
         TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
       );
-      const emailConfirmStatus = await userManager.confirmEmail(
+      const { confirmedEmail } = await userManager.confirmEmail(
         `corrupt${token}`
       );
-      expect(emailConfirmStatus).toBe(false);
+      expect(confirmedEmail).toBe(false);
       done();
     });
 
@@ -263,8 +263,8 @@ describe("UserManager Module", () => {
         TOKEN_TYPES.TOKEN_TYPE_VERIFY_EMAIL
       );
       MockDate.set(new Date(Date.now() + +EMAIL_TOKEN_TIMEOUT));
-      const emailConfirmStatus = await userManager.confirmEmail(token);
-      expect(emailConfirmStatus).toBe(false);
+      const { confirmedEmail } = await userManager.confirmEmail(token);
+      expect(confirmedEmail).toBe(false);
       MockDate.reset();
       done();
     });

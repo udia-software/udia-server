@@ -65,6 +65,7 @@ describe("Resolvers", () => {
               _id
             }
           }
+          countImmediateChildren
         }
       }`;
 
@@ -115,7 +116,8 @@ describe("Resolvers", () => {
               dataType: "TEXT",
               parent: { _id: "" + node._id, title: "Parent Node" },
               relationType: "COMMENT",
-              title: "Comment Node"
+              title: "Comment Node",
+              countImmediateChildren: 0
             }
           ]
         }
@@ -167,6 +169,8 @@ describe("Resolvers", () => {
               _id
             }
           }
+          countImmediateChildren
+          countAllChildren
         }
       }`;
 
@@ -204,7 +208,9 @@ describe("Resolvers", () => {
               dataType: "TEXT",
               parent: null,
               relationType: "POST",
-              title: "Parent Node"
+              title: "Parent Node",
+              countImmediateChildren: 1,
+              countAllChildren: 1
             }
           ]
         }

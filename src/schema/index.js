@@ -19,6 +19,8 @@ const typeDefs = `
     updatedBy: User @relation(name: "UserUpdatedNodes")
     createdAt: DateTime
     updatedAt: DateTime
+    countImmediateChildren: Int!
+    countAllChildren: Int!
   }
 
   enum NodeDataType {
@@ -37,7 +39,6 @@ const typeDefs = `
     id: ID
     id_in: [ID!]
     parent: ID
-    children_contains: [ID!]
     createdBy: ID
     title_contains: String
     content_contains: String
@@ -142,6 +143,7 @@ const typeDefs = `
 
   type Subscription {
     NodeSubscription(filter: NodeSubscriptionFilter): NodeSubscriptionPayload
+    UserSubscription(filter: UserSubscriptionFilter): UserSubscriptionPayload
   }
   
   input NodeSubscriptionFilter {
@@ -154,6 +156,14 @@ const typeDefs = `
     node: Node!
   }
   
+  input UserSubscriptionFilter {
+    jwt: String!
+  }
+
+  type UserSubscriptionPayload {
+    user: FullUser!
+  }
+
   enum ModelMutationType {
     CREATED,
     UPDATED

@@ -5,6 +5,21 @@ const { URL } = require("url");
 const { ObjectID } = require("mongodb");
 const { ValidationError } = require("./Errors");
 
+/**
+ * Node Manager, class responsible for handling persistence, validity, and
+ * retrival of nodes from MongoDB.
+ *
+ * Node Schema:
+ *   dataType {string} - one of "TEXT", "URL", or "DELETED"
+ *   relationType {string} - one of "POST" or "COMMENT"
+ *   title {string} - 1 to 300 characters
+ *   content {string} - 1 to 40000 characters
+ *   createdAt {Date} - JavaScript date,
+ *   updatedAt {Date} - JavaScript date,
+ *   createdById {ObjectId} - MongoDB Object ID mapping to User
+ *   updatedById {ObjectId} - MongoDB Object ID mapping to User
+ *   parentId {ObjectId} - MongoDB Object ID mapping to Node,
+ */
 class NodeManager {
   constructor(nodeCollection) {
     this.collection = nodeCollection;
@@ -64,11 +79,19 @@ class NodeManager {
    * @param {Array} errors - Array of errors
    */
   static validateTitle(title, relationType, errors) {
-    if (relationType !== "COMMENT" && (!title || (title && !title.trim()))) {
-      errors.push({
-        key: "title",
-        message: "Title must not be empty."
-      });
+    if (relationType !== "COMMENT") {
+      if (!title || (title && !title.trim())) {
+        errors.push({
+          key: "title",
+          message: "Title must not be empty."
+        });
+      }
+      if (("" + title).trim().length > 300) {
+        errors.push({
+          key: "title",
+          message: "Title cannot be longer than 300 characters."
+        });
+      }
     }
   }
 
@@ -78,10 +101,16 @@ class NodeManager {
    * @param {Array} errors - Array of errors
    */
   static validateContent(content, errors) {
-    if (!content || !content.trim()) {
+    if (!content || (content && !content.trim())) {
       errors.push({
         key: "content",
         message: "Content must not be empty."
+      });
+    }
+    if (("" + content).trim().length > 40000) {
+      errors.push({
+        key: "content",
+        message: "Content cannot be longer than 40000 characters."
       });
     }
   }
@@ -237,18 +266,10 @@ class NodeManager {
       updatedAt: now,
       createdById,
       updatedById: createdById,
-      parentId: parentIdValidated,
-      childrenIds: []
+      parentId: parentIdValidated
     };
     const response = await this.collection.insert(newNode);
     const newNodeId = response.insertedIds[0];
-    if (parentIdValidated) {
-      // update the parent id with the child
-      await this.collection.update(
-        { _id: parentIdValidated },
-        { $push: { childrenIds: new ObjectID(newNodeId) } }
-      );
-    }
     return Object.assign({ _id: newNodeId }, newNode);
   }
 
@@ -354,7 +375,6 @@ class NodeManager {
     id,
     id_in, // id field is in this array
     parent,
-    children_contains, // node's childrenIds has all of these ids
     createdBy,
     updatedBy,
     title_contains,
@@ -397,20 +417,6 @@ class NodeManager {
       } catch (_err) {
         outputFilter.parentId = new ObjectID();
       }
-    }
-
-    if (children_contains === null) {
-      outputFilter.childrenIds = [];
-    } else if (children_contains !== undefined) {
-      outputFilter.childrenIds = {
-        $all: children_contains.map(textId => {
-          try {
-            return new ObjectID(textId);
-          } catch (_err) {
-            return new ObjectID();
-          }
-        })
-      };
     }
 
     if (createdBy !== undefined) {
@@ -581,6 +587,55 @@ class NodeManager {
       ])
       .toArray();
     return result.length > 0;
+  }
+
+  /**
+   * Find the count of all immediate children of a node.
+   * @param {string} nodeId - Mongo Object Id for node
+   */
+  async countImmediateChildren(nodeId) {
+    if (!nodeId) {
+      return 0;
+    }
+    const result = await this.collection
+      .aggregate([
+        {
+          $match: {
+            parentId: new ObjectID(nodeId)
+          }
+        },
+        {
+          $count: "immediate_children"
+        }
+      ])
+      .toArray();
+    return (result[0] || {}).immediate_children || 0;
+  }
+
+  /**
+   * Find the count of all recurisvely nested children of a node.
+   * @param {string} nodeId - Mongo Object Id for node
+   */
+  async countAllChildren(nodeId) {
+    if (!nodeId) {
+      return 0;
+    }
+    const result = await this.collection
+      .aggregate([
+        { $match: { _id: new ObjectID(nodeId) } },
+        {
+          $graphLookup: {
+            from: "nodes",
+            startWith: "$_id",
+            connectFromField: "_id",
+            connectToField: "parentId",
+            as: "children"
+          }
+        },
+        { $project: { total_children: { $size: "$children" } } }
+      ])
+      .toArray();
+    return (result[0] || {}).total_children || 0;
   }
 }
 
