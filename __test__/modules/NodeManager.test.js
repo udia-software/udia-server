@@ -129,11 +129,10 @@ describe("NodeManager Module", () => {
       expect(deletedNode._id).toEqual(node._id);
       expect(deletedNode).toEqual({
         _id: node._id,
-        childrenIds: [],
         content: null,
         createdAt: null,
         createdById: null,
-        dataType: "TEXT",
+        dataType: "DELETED",
         parentId: null,
         relationType: "POST",
         title: null,
@@ -144,57 +143,98 @@ describe("NodeManager Module", () => {
     });
 
     it("should error on creating node without authorization", async done => {
-      const type = "TEXT";
+      const dataType = "TEXT";
+      const relationType = "POST";
       const title = "Test Node";
       const content = "Test Node Content";
 
       await expect(
-        nodeManager.createNode(null, type, title, content)
+        nodeManager.createNode(null, dataType, relationType, title, content)
       ).rejects.toEqual(new ValidationError());
       done();
     });
 
-    it("should error on creating node without a type", async done => {
+    it("should error on creating node without a datatype", async done => {
       const createdBy = await testHelper.createTestUser({});
+      const relationType = "POST";
       const title = "Test Node";
       const content = "Test Node Content";
 
       await expect(
-        nodeManager.createNode(createdBy, null, title, content)
+        nodeManager.createNode(createdBy, null, relationType, title, content)
+      ).rejects.toEqual(new ValidationError());
+      done();
+    });
+
+    it("should error on creating node without a relationtype", async done => {
+      const createdBy = await testHelper.createTestUser({});
+      const dataType = "TEXT";
+      const title = "Test Node";
+      const content = "Test Node Content";
+
+      await expect(
+        nodeManager.createNode(createdBy, dataType, null, title, content)
       ).rejects.toEqual(new ValidationError());
       done();
     });
 
     it("should error on creating node without a title", async done => {
       const createdBy = await testHelper.createTestUser({});
-      const type = "TEXT";
+      const dataType = "TEXT";
+      const relationType = "POST";
       const content = "Test Node Content";
 
       await expect(
-        nodeManager.createNode(createdBy, type, null, content)
+        nodeManager.createNode(createdBy, dataType, relationType, null, content)
+      ).rejects.toEqual(new ValidationError());
+      done();
+    });
+
+    it("should error on creating node with too long title", async done => {
+      const createdBy = await testHelper.createTestUser({});
+      const dataType = "TEXT";
+      const relationType = "POST";
+      const content = "Test Node Content";
+      const title = "A".repeat(301);
+      await expect(
+        nodeManager.createNode(createdBy, dataType, relationType, title, content)
       ).rejects.toEqual(new ValidationError());
       done();
     });
 
     it("should error on creating node without content", async done => {
       const createdBy = await testHelper.createTestUser({});
-      const type = "TEXT";
+      const dataType = "TEXT";
+      const relationType = "POST";
       const title = "Test Node";
 
       await expect(
-        nodeManager.createNode(createdBy, type, title, null)
+        nodeManager.createNode(createdBy, dataType, relationType, title, null)
+      ).rejects.toEqual(new ValidationError());
+      done();
+    });
+
+    it("should error on creating node with too long content", async done => {
+      const createdBy = await testHelper.createTestUser({});
+      const dataType = "TEXT";
+      const relationType = "POST";
+      const title = "Test Node";
+      const content = "B".repeat(40001);
+      await expect(
+        nodeManager.createNode(createdBy, dataType, relationType, title, content)
       ).rejects.toEqual(new ValidationError());
       done();
     });
 
     it("should error on creating node with invalid url", async done => {
       const createdBy = await testHelper.createTestUser({});
-      const type = "URL";
+      const dataType = "URL";
+      const relationType = "POST";
       const title = "Test Node";
       const content = "not a url";
 
       await expect(
-        nodeManager.createNode(createdBy, type, title, content)
+        nodeManager.createNode(createdBy, dataType, relationType, title, content)
       ).rejects.toEqual(new ValidationError());
       done();
     });
@@ -477,46 +517,6 @@ describe("NodeManager Module", () => {
       done();
     });
 
-    it("should filter nodes by children", async done => {
-      const createdBy = await testHelper.createTestUser({});
-      const node = await testHelper.generateTestNode({ createdBy });
-      const commentNode = await testHelper.generateTestNode({
-        createdBy,
-        relationType: "COMMENT",
-        parentId: node._id + ""
-      });
-      const hasChildrenNodes = await nodeManager.allNodes({
-        children_contains: [commentNode._id + ""]
-      });
-      expect(hasChildrenNodes).toContainEqual(
-        await nodeManager.getNodeById(node._id)
-      );
-      const newCommentNode = await testHelper.generateTestNode({
-        createdBy,
-        relationType: "COMMENT",
-        parentId: node._id + ""
-      });
-      const hasMultipleChildrenNodes = await nodeManager.allNodes({
-        children_contains: [commentNode._id, newCommentNode._id]
-      });
-      expect(hasMultipleChildrenNodes).toContainEqual(
-        await nodeManager.getNodeById(node._id, true)
-      );
-      const noChildrenNodes = await nodeManager.allNodes({
-        children_contains: [node._id + ""]
-      });
-      expect(noChildrenNodes).toHaveLength(0);
-      const nullChildrenNodes = await nodeManager.allNodes({
-        children_contains: null
-      });
-      expect(nullChildrenNodes).toContainEqual(commentNode);
-      const badIdNodes = await nodeManager.allNodes({
-        children_contains: ["foobar"]
-      });
-      expect(badIdNodes).toHaveLength(0);
-      done();
-    });
-
     it("should filter nodes by createdBy", async done => {
       const createdBy = await testHelper.createTestUser({});
       const node = await testHelper.generateTestNode({ createdBy });
@@ -524,6 +524,7 @@ describe("NodeManager Module", () => {
         createdBy: createdBy._id
       });
       expect(createdByNodes).toContainEqual(node);
+      expect(createdByNodes).toHaveLength(1);
       done();
     });
 
@@ -653,6 +654,108 @@ describe("NodeManager Module", () => {
       expect(await nodeManager.getNodeById(new ObjectId())).toBeNull();
       expect(await nodeManager.getNodeById("")).toBeNull();
       expect(await nodeManager.getNodeById("bloop")).toBeNull();
+      done();
+    });
+
+    it("should determine child relationship between parent and node", async done => {
+      const createdBy = await testHelper.createTestUser({});
+      const grandparentNode = await testHelper.generateTestNode({ createdBy });
+      const parentNode = await testHelper.generateTestNode({
+        createdBy,
+        parentId: grandparentNode._id
+      });
+      const childNode = await testHelper.generateTestNode({
+        createdBy,
+        parentId: parentNode._id
+      });
+
+      const allChild = await nodeManager.isNodeIdAChildOfParentId(
+        "" + childNode._id,
+        null
+      );
+      expect(allChild).toBe(true);
+
+      const isChild = await nodeManager.isNodeIdAChildOfParentId(
+        "" + childNode._id,
+        "" + grandparentNode._id
+      );
+      expect(isChild).toBe(true);
+
+      const notChild = await nodeManager.isNodeIdAChildOfParentId(
+        "" + grandparentNode._id,
+        "" + childNode._id
+      );
+      expect(notChild).toBe(false);
+      done();
+    });
+
+    it("should determine count of immediate children", async done => {
+      const createdBy = await testHelper.createTestUser({});
+      const parentNode = await testHelper.generateTestNode({ createdBy });
+      const childNode = await testHelper.generateTestNode({
+        createdBy,
+        parentId: parentNode._id
+      });
+      // child node 2
+      await testHelper.generateTestNode({
+        createdBy,
+        parentId: parentNode._id
+      });
+
+      const numKidsFromParent = await nodeManager.countImmediateChildren(
+        "" + parentNode._id
+      );
+      expect(numKidsFromParent).toBe(2);
+
+      const numKidsFromChild = await nodeManager.countImmediateChildren(
+        "" + childNode._id
+      );
+      expect(numKidsFromChild).toBe(0);
+
+      let invalidCount = await nodeManager.countImmediateChildren(
+        new ObjectId()
+      );
+      expect(invalidCount).toBe(0);
+
+      invalidCount = await nodeManager.countImmediateChildren(null);
+      expect(invalidCount).toBe(0);
+      done();
+    });
+
+    it("should determine count of all nested children", async done => {
+      const createdBy = await testHelper.createTestUser({});
+      const grandparentNode = await testHelper.generateTestNode({ createdBy });
+      const parentNode = await testHelper.generateTestNode({
+        createdBy,
+        parentId: grandparentNode._id
+      });
+      const childNode = await testHelper.generateTestNode({
+        createdBy,
+        parentId: parentNode._id
+      });
+
+      const numKidsFromChild = await nodeManager.countAllChildren(
+        "" + childNode._id
+      );
+      expect(numKidsFromChild).toBe(0);
+
+      const numKidsFromParent = await nodeManager.countAllChildren(
+        "" + parentNode._id
+      );
+      expect(numKidsFromParent).toBe(1);
+
+      const numKidsFromGrandParent = await nodeManager.countAllChildren(
+        "" + grandparentNode._id
+      );
+      expect(numKidsFromGrandParent).toBe(2);
+
+      let invalidCount = await nodeManager.countAllChildren(
+        new ObjectId()
+      );
+      expect(invalidCount).toBe(0);
+
+      invalidCount = await nodeManager.countAllChildren(null);
+      expect(invalidCount).toBe(0);
       done();
     });
   });

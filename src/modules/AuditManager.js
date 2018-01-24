@@ -1,12 +1,4 @@
 "use strict";
-const {
-  NODE_ENV,
-  AUDIT_ACTIVITIES
-} = require("../constants");
-
-const ARRAY_AUDIT_ACTIVITIES = Object.keys(AUDIT_ACTIVITIES).map(
-  key => AUDIT_ACTIVITIES[key]
-);
 
 class AuditManager {
   constructor(auditCollection) {

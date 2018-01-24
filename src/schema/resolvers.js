@@ -1,7 +1,8 @@
 "use strict";
 
 const { Kind } = require("graphql/language");
-const { authenticateUser } = require("../modules/Auth");
+const { withFilter } = require("graphql-subscriptions");
+const { authenticateUser, getIdFromJWT } = require("../modules/Auth");
 const { AUDIT_ACTIVITIES } = require("../constants");
 const pubSub = require("../pubsub");
 
@@ -28,12 +29,15 @@ module.exports = {
         content,
         parentId
       );
-      pubSub.publish("Node", { Node: { mutation: "CREATED", node: newNode } });
+      pubSub.publish("Node", {
+        NodeSubscription: { mutation: "CREATED", node: newNode }
+      });
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.CREATE_NODE,
         originIp,
         user,
-        newNode
+        newNode,
+        { dataType, relationType, title, content, parentId }
       );
       return newNode;
     },
@@ -50,20 +54,21 @@ module.exports = {
         content
       );
       pubSub.publish("Node", {
-        Node: { mutation: "UPDATED", node: updatedNode }
+        NodeSubscription: { mutation: "UPDATED", node: updatedNode }
       });
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.UPDATE_NODE,
         originIp,
         user,
-        updatedNode
+        updatedNode,
+        { dataType, title, content }
       );
       return updatedNode;
     },
     deleteNode: async (_root, { id }, { Audits, Nodes, user, originIp }) => {
       const deletedNode = await Nodes.deleteNode(id, user);
       pubSub.publish("Node", {
-        Node: { mutation: "UPDATED", node: deletedNode }
+        NodeSubscription: { mutation: "UPDATED", node: deletedNode }
       });
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.DELETE_NODE,
@@ -82,8 +87,11 @@ module.exports = {
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.CREATE_USER,
         originIp,
-        user
+        user,
+        null,
+        { email, username }
       );
+      pubSub.publish("User", { UserSubscription: { user } });
       return await authenticateUser(password, email, Users);
     },
     signinUser: async (
@@ -102,8 +110,11 @@ module.exports = {
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.LOGIN_SUCCESS,
         originIp,
-        authPayload.user
+        authPayload.user,
+        null,
+        { email }
       );
+      pubSub.publish("User", { UserSubscription: { user: authPayload.user } });
       return authPayload;
     },
     forgotPassword: async (_root, { email }, { Audits, Users, originIp }) => {
@@ -125,8 +136,11 @@ module.exports = {
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.TOKEN_CHANGE_PASSWORD,
         originIp,
-        user
+        user,
+        null,
+        { token }
       );
+      pubSub.publish("User", { UserSubscription: { user } });
       return await authenticateUser(password, user.email, Users);
     },
     updatePassword: async (
@@ -139,6 +153,7 @@ module.exports = {
         originIp,
         user
       );
+      pubSub.publish("User", { UserSubscription: { user } });
       return await Users.updatePassword(user, password);
     },
     resendConfirmationEmail: async (
@@ -154,15 +169,16 @@ module.exports = {
       return await Users.resendConfirmationEmail(user);
     },
     confirmEmail: async (_root, { token }, { Audits, Users, originIp }) => {
-      const confirmEmailPayload = await Users.confirmEmail(token);
+      const { user, confirmedEmail } = await Users.confirmEmail(token);
       await Audits.createAuditRecord(
         AUDIT_ACTIVITIES.VERIFY_EMAIL,
         originIp,
-        null,
+        user,
         null,
         { token }
       );
-      return confirmEmailPayload;
+      pubSub.publish("User", { UserSubscription: { user } });
+      return confirmedEmail;
     },
     changeEmail: async (
       _root,
@@ -177,12 +193,34 @@ module.exports = {
         null,
         { email }
       );
+      pubSub.publish("User", { UserSubscription: { user } });
       return changeEmailPayload;
     }
   },
   Subscription: {
-    Node: {
-      subscribe: () => pubSub.asyncIterator("Node")
+    NodeSubscription: {
+      subscribe: withFilter(
+        () => pubSub.asyncIterator("Node"),
+        ({ NodeSubscription }, { filter }, { Nodes }) => {
+          const validChild = Nodes.isNodeIdAChildOfParentId(
+            NodeSubscription.node._id,
+            filter.parentId
+          );
+          return (
+            filter.mutation_in.indexOf(NodeSubscription.mutation) >= 0 &&
+            validChild
+          );
+        }
+      )
+    },
+    UserSubscription: {
+      subscribe: withFilter(
+        () => pubSub.asyncIterator("User"),
+        ({ UserSubscription }, { filter }, { Users }) => {
+          const userId = getIdFromJWT(filter.jwt);
+          return "" + userId === "" + UserSubscription.user._id;
+        }
+      )
     }
   },
   Node: {
@@ -203,6 +241,12 @@ module.exports = {
         skip,
         first
       );
+    },
+    countImmediateChildren: async ({ _id }, _data, { Nodes }) => {
+      return await Nodes.countImmediateChildren(_id);
+    },
+    countAllChildren: async ({ _id }, _data, { Nodes }) => {
+      return await Nodes.countAllChildren(_id);
     }
   },
   User: {

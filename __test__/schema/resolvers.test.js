@@ -65,6 +65,7 @@ describe("Resolvers", () => {
               _id
             }
           }
+          countImmediateChildren
         }
       }`;
 
@@ -115,7 +116,8 @@ describe("Resolvers", () => {
               dataType: "TEXT",
               parent: { _id: "" + node._id, title: "Parent Node" },
               relationType: "COMMENT",
-              title: "Comment Node"
+              title: "Comment Node",
+              countImmediateChildren: 0
             }
           ]
         }
@@ -167,6 +169,8 @@ describe("Resolvers", () => {
               _id
             }
           }
+          countImmediateChildren
+          countAllChildren
         }
       }`;
 
@@ -204,7 +208,9 @@ describe("Resolvers", () => {
               dataType: "TEXT",
               parent: null,
               relationType: "POST",
-              title: "Parent Node"
+              title: "Parent Node",
+              countImmediateChildren: 1,
+              countAllChildren: 1
             }
           ]
         }
@@ -402,7 +408,7 @@ describe("Resolvers", () => {
           updatedAt
         }
       }`;
-      const data = {
+      let data = {
         query,
         variables: {
           id: node._id,
@@ -411,7 +417,7 @@ describe("Resolvers", () => {
           content: "https://www.udia.ca"
         }
       };
-      const response = await client.post("/graphql", data, {
+      let response = await client.post("/graphql", data, {
         headers: { authorization: jwt }
       });
       expect(response.status).toBe(200);
@@ -434,6 +440,18 @@ describe("Resolvers", () => {
       expect(response.data.data.updateNode.dataType).toEqual("URL");
       expect(response.data.data.updateNode.parent).toBeNull();
       expect(response.data.data.updateNode.relationType).toEqual("POST");
+      data = {
+        query,
+        variables: {
+          id: node._id,
+          dataType: "TEXT"
+        }
+      };
+      response = await client.post("/graphql", data, {
+        headers: { authorization: jwt }
+      });
+      expect(response.status).toBe(200);
+      expect(response.data.data.updateNode.dataType).toEqual("TEXT");
       done();
     });
 
@@ -485,7 +503,7 @@ describe("Resolvers", () => {
             content: null,
             createdAt: null,
             createdBy: null,
-            dataType: "TEXT",
+            dataType: "DELETED",
             parent: null,
             relationType: "POST",
             title: null,

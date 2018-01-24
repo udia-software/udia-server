@@ -3,6 +3,7 @@
 // coverage don't care about environment variables
 /* istanbul ignore next */
 module.exports = {
+  // environment variables
   NODE_ENV: process.env.NODE_ENV || "development",
   JWT_SECRET: process.env.JWT_SECRET || "UDIA Development JWT Secret Key",
   MONGODB_URI: process.env.MONGODB_URI || "mongodb://localhost:27017",
@@ -14,6 +15,8 @@ module.exports = {
   SMTP_HOST: process.env.SMTP_HOST || "smtp.ethereal.email",
   SMTP_PORT: process.env.SMTP_PORT || "587",
   EMAIL_TOKEN_TIMEOUT: process.env.EMAIL_TOKEN_TIMEOUT || "3600000",
+  REDIS_URL: process.env.REDIS_URL || "",
+  // static strings
   TOKEN_TYPES: {
     TOKEN_TYPE_VERIFY_EMAIL: "VERIFY_EMAIL",
     TOKEN_TYPE_RESET_PASSWORD: "RESET_PASSWORD"
