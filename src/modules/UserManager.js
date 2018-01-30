@@ -11,6 +11,14 @@ const {
 const { ValidationError } = require("./Errors");
 const { sendEmailVerification, sendForgotPasswordEmail } = require("../mailer");
 
+/**
+ * username,
+ * email,
+ * createdAt: now,
+ * updatedAt: now,
+ * passwordHash,
+ * emailVerified: false
+ */
 class UserManager {
   constructor(userCollection) {
     this.collection = userCollection;
