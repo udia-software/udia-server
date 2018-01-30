@@ -53,8 +53,12 @@ const start = async () => {
 
   const buildOptions = async req => {
     const userManager = new UserManager(db.collection("users"));
-    await db.collection("users").ensureIndex("username");
-    await db.collection("users").ensureIndex("email");
+    try {
+      await db.collection("users").ensureIndex("username");
+      await db.collection("users").ensureIndex("email");  
+    } catch (err) {
+      // pass, wonder why indexes cause errors
+    }
     const user = await verifyUserJWT(req, userManager);
     return {
       context: {
