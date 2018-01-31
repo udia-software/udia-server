@@ -21,6 +21,7 @@ Set these, or use the defaults.
 | `NODE_ENV`                | `development`                     | `development` `test` `production` |
 | `JWT_SECRET`              | `UDIA Development JWT Secret Key` | JWT Secret Key                    |
 | `MONGODB_URI`             | `mongodb://localhost:27017`       | Connection string for MongoDB     |
+| `MONGODB_DB_NAME`         | ` `                               | Production MongoDB Name           |
 | `PORT`                    | `3000`                            | Port for serving http server      |
 | `SALT_ROUNDS`             | `12`                              | Number of bcrypt rounds           |
 | `TEST_JWT`                | ` `                               | JWT to use for graphiql in dev    |

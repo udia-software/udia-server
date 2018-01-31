@@ -8,7 +8,13 @@ const { execute, subscribe, formatError } = require("graphql");
 const { createServer } = require("http");
 const { SubscriptionServer } = require("subscriptions-transport-ws");
 
-const { PORT, NODE_ENV, TEST_JWT, SALT_ROUNDS } = require("./constants");
+const {
+  PORT,
+  NODE_ENV,
+  TEST_JWT,
+  SALT_ROUNDS,
+  MONGODB_DB_NAME
+} = require("./constants");
 const connectMongo = require("./connectMongo");
 const schema = require("./schema");
 const { verifyUserJWT } = require("./modules/Auth");
@@ -33,7 +39,7 @@ const start = async () => {
   } else if (NODE_ENV === "development") {
     db = _mongo.db("udiadev");
   } else if (NODE_ENV === "production") {
-    db = _mongo.db("udia");
+    db = _mongo.db(MONGODB_DB_NAME);
   } else {
     throw new Error(
       `NODE_ENV must be 'test', 'development' or 'production'. (currently ${NODE_ENV})`
@@ -53,12 +59,8 @@ const start = async () => {
 
   const buildOptions = async req => {
     const userManager = new UserManager(db.collection("users"));
-    try {
-      await db.collection("users").ensureIndex("username");
-      await db.collection("users").ensureIndex("email");  
-    } catch (err) {
-      // pass, wonder why indexes cause errors
-    }
+    await db.collection("users").ensureIndex("username");
+    await db.collection("users").ensureIndex("email");
     const user = await verifyUserJWT(req, userManager);
     return {
       context: {

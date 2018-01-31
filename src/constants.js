@@ -16,6 +16,7 @@ module.exports = {
   SMTP_PORT: process.env.SMTP_PORT || "587",
   EMAIL_TOKEN_TIMEOUT: process.env.EMAIL_TOKEN_TIMEOUT || "3600000",
   REDIS_URL: process.env.REDIS_URL || "",
+  MONGODB_DB_NAME: process.env.MONGODB_DB_NAME || "",
   // static strings
   TOKEN_TYPES: {
     TOKEN_TYPE_VERIFY_EMAIL: "VERIFY_EMAIL",
