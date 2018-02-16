@@ -178,6 +178,46 @@ describe("NodeManager Module", () => {
       done();
     });
 
+    it("should error on creating top level Comment nodes", async done => {
+      const createdBy = await testHelper.createTestUser({});
+      const dataType = "TEXT";
+      const title = "Test Node";
+      const content = "Test Node Content";
+      const relationType = "COMMENT";
+
+      await expect(
+        nodeManager.createNode(
+          createdBy,
+          dataType,
+          relationType,
+          title,
+          content
+        )
+      ).rejects.toEqual(new ValidationError());
+      done();
+    });
+
+    it("should error on created child level Post nodes", async done => {
+      const createdBy = await testHelper.createTestUser({});
+      const parentNode = await testHelper.generateTestNode({ createdBy });
+      const dataType = "TEXT";
+      const title = "Test Node";
+      const content = "Test Node Content";
+      const relationType = "POST";
+
+      await expect(
+        nodeManager.createNode(
+          createdBy,
+          dataType,
+          relationType,
+          title,
+          content,
+          parentNode._id
+        )
+      ).rejects.toEqual(new ValidationError());
+      done();
+    });
+
     it("should error on creating node without a title", async done => {
       const createdBy = await testHelper.createTestUser({});
       const dataType = "TEXT";
@@ -197,7 +237,13 @@ describe("NodeManager Module", () => {
       const content = "Test Node Content";
       const title = "A".repeat(301);
       await expect(
-        nodeManager.createNode(createdBy, dataType, relationType, title, content)
+        nodeManager.createNode(
+          createdBy,
+          dataType,
+          relationType,
+          title,
+          content
+        )
       ).rejects.toEqual(new ValidationError());
       done();
     });
@@ -221,7 +267,13 @@ describe("NodeManager Module", () => {
       const title = "Test Node";
       const content = "B".repeat(40001);
       await expect(
-        nodeManager.createNode(createdBy, dataType, relationType, title, content)
+        nodeManager.createNode(
+          createdBy,
+          dataType,
+          relationType,
+          title,
+          content
+        )
       ).rejects.toEqual(new ValidationError());
       done();
     });
@@ -234,7 +286,13 @@ describe("NodeManager Module", () => {
       const content = "not a url";
 
       await expect(
-        nodeManager.createNode(createdBy, dataType, relationType, title, content)
+        nodeManager.createNode(
+          createdBy,
+          dataType,
+          relationType,
+          title,
+          content
+        )
       ).rejects.toEqual(new ValidationError());
       done();
     });
@@ -662,11 +720,13 @@ describe("NodeManager Module", () => {
       const grandparentNode = await testHelper.generateTestNode({ createdBy });
       const parentNode = await testHelper.generateTestNode({
         createdBy,
-        parentId: grandparentNode._id
+        parentId: grandparentNode._id,
+        relationType: "COMMENT"
       });
       const childNode = await testHelper.generateTestNode({
         createdBy,
-        parentId: parentNode._id
+        parentId: parentNode._id,
+        relationType: "COMMENT"
       });
 
       const allChild = await nodeManager.isNodeIdAChildOfParentId(
@@ -694,12 +754,14 @@ describe("NodeManager Module", () => {
       const parentNode = await testHelper.generateTestNode({ createdBy });
       const childNode = await testHelper.generateTestNode({
         createdBy,
-        parentId: parentNode._id
+        parentId: parentNode._id,
+        relationType: "COMMENT"
       });
       // child node 2
       await testHelper.generateTestNode({
         createdBy,
-        parentId: parentNode._id
+        parentId: parentNode._id,
+        relationType: "COMMENT"
       });
 
       const numKidsFromParent = await nodeManager.countImmediateChildren(
@@ -727,11 +789,13 @@ describe("NodeManager Module", () => {
       const grandparentNode = await testHelper.generateTestNode({ createdBy });
       const parentNode = await testHelper.generateTestNode({
         createdBy,
-        parentId: grandparentNode._id
+        parentId: grandparentNode._id,
+        relationType: "COMMENT"
       });
       const childNode = await testHelper.generateTestNode({
         createdBy,
-        parentId: parentNode._id
+        parentId: parentNode._id,
+        relationType: "COMMENT"
       });
 
       const numKidsFromChild = await nodeManager.countAllChildren(
@@ -749,9 +813,7 @@ describe("NodeManager Module", () => {
       );
       expect(numKidsFromGrandParent).toBe(2);
 
-      let invalidCount = await nodeManager.countAllChildren(
-        new ObjectId()
-      );
+      let invalidCount = await nodeManager.countAllChildren(new ObjectId());
       expect(invalidCount).toBe(0);
 
       invalidCount = await nodeManager.countAllChildren(null);

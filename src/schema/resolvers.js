@@ -216,7 +216,7 @@ module.exports = {
     UserSubscription: {
       subscribe: withFilter(
         () => pubSub.asyncIterator("User"),
-        ({ UserSubscription }, { filter }, { Users }) => {
+        ({ UserSubscription }, { filter }) => {
           const userId = getIdFromJWT(filter.jwt);
           return "" + userId === "" + UserSubscription.user._id;
         }
