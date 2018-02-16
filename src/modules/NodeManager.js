@@ -61,13 +61,21 @@ class NodeManager {
   /**
    * RelationType Validation, check if type in ENUM defs
    * @param {string} relationType - String representation of relation type
+   * @param {string} parentId - String representation of parentId
    * @param {Array} errors - Array of errors
    */
-  static validateRelationType(relationType, errors) {
+  static validateRelationType(relationType, parentId, errors) {
     if (["POST", "COMMENT"].indexOf(relationType) < 0) {
       errors.push({
         key: "relationType",
         message: "RelationType must be POST or COMMENT."
+      });
+    }
+    // Comments cannot be top level.
+    if (!parentId && relationType === "COMMENT") {
+      errors.push({
+        key: "relationType",
+        message: "Cannot create top level COMMENT nodes."
       });
     }
   }
@@ -179,9 +187,10 @@ class NodeManager {
   /**
    * Parent Validation, check if Valid MongoID and is existing node
    * @param {string} parentId - String identifier for parent node
+   * @param {string} relationType - String identifier for relation type
    * @param {Array} errors - Array of errors
    */
-  async validateParent(parentId, errors) {
+  async validateParent(parentId, relationType, errors) {
     let parentIdValidated = null;
     if (parentId) {
       try {
@@ -200,6 +209,14 @@ class NodeManager {
           key: "parentId",
           message: "Parent must exist."
         });
+      } else {
+        // Parent exists. Only allow comments.
+        if (relationType === "POST") {
+          errors.push({
+            key: "relationType",
+            message: "Cannot create nested POST nodes."
+          });
+        }
       }
     }
     return parentIdValidated;
@@ -246,11 +263,15 @@ class NodeManager {
     const errors = [];
     const createdById = NodeManager.validateAuthenticated(createdBy, errors);
     NodeManager.validateDataType(dataType, errors);
-    NodeManager.validateRelationType(relationType, errors);
+    NodeManager.validateRelationType(relationType, parentId, errors);
     NodeManager.validateTitle(title, relationType, errors);
     NodeManager.validateContent(content, errors);
     NodeManager.validateURL(dataType, content, errors);
-    const parentIdValidated = await this.validateParent(parentId, errors);
+    const parentIdValidated = await this.validateParent(
+      parentId,
+      relationType,
+      errors
+    );
 
     if (errors.length) {
       throw new ValidationError(errors);
