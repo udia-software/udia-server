@@ -199,8 +199,9 @@ describe("NodeManager Module", () => {
           title,
           content
         )
-      ).rejects.toHaveProperty("state", {
-        relationType: ["Cannot create top level COMMENT nodes."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { relationType: ["Cannot create top level COMMENT nodes."] }
       });
       done();
     });
@@ -222,8 +223,9 @@ describe("NodeManager Module", () => {
           content,
           parentNode._id
         )
-      ).rejects.toHaveProperty("state", {
-        relationType: ["Cannot create nested POST nodes."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { relationType: ["Cannot create nested POST nodes."] }
       });
       done();
     });
@@ -236,8 +238,9 @@ describe("NodeManager Module", () => {
 
       await expect(
         nodeManager.createNode(createdBy, dataType, relationType, null, content)
-      ).rejects.toHaveProperty("state", {
-        title: ["Title must not be empty."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { title: ["Title must not be empty."] }
       });
       done();
     });
@@ -256,8 +259,9 @@ describe("NodeManager Module", () => {
           title,
           content
         )
-      ).rejects.toHaveProperty("state", {
-        title: ["Title cannot be longer than 300 characters."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { title: ["Title cannot be longer than 300 characters."] }
       });
       done();
     });
@@ -270,8 +274,9 @@ describe("NodeManager Module", () => {
 
       await expect(
         nodeManager.createNode(createdBy, dataType, relationType, title, null)
-      ).rejects.toHaveProperty("state", {
-        content: ["Content must not be empty."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { content: ["Content must not be empty."] }
       });
       done();
     });
@@ -290,8 +295,9 @@ describe("NodeManager Module", () => {
           title,
           content
         )
-      ).rejects.toHaveProperty("state", {
-        content: ["Content cannot be longer than 40000 characters."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { content: ["Content cannot be longer than 40000 characters."] }
       });
       done();
     });
@@ -311,8 +317,9 @@ describe("NodeManager Module", () => {
           title,
           content
         )
-      ).rejects.toHaveProperty("state", {
-        content: ["Content must be a valid url."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { content: ["Content must be a valid url."] }
       });
       done();
     });
@@ -329,7 +336,10 @@ describe("NodeManager Module", () => {
           "Content",
           fakeId + ""
         )
-      ).rejects.toHaveProperty("state", { parentId: ["Parent must exist."] });
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { parentId: ["Parent must exist."] }
+      });
       await expect(
         nodeManager.createNode(
           createdBy,
@@ -339,8 +349,9 @@ describe("NodeManager Module", () => {
           "Content",
           "badid"
         )
-      ).rejects.toHaveProperty("state", {
-        parentId: ["ParentId must be a valid Mongo ObjectID."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { parentId: ["ParentId must be a valid Mongo ObjectID."] }
       });
       done();
     });
@@ -356,14 +367,16 @@ describe("NodeManager Module", () => {
           node.title,
           node.content
         )
-      ).rejects.toHaveProperty("state", {
-        _id: ["Cannot update node with no changes."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { _id: ["Cannot update node with no changes."] }
       });
 
       await expect(
         nodeManager.updateNode(node._id, createdBy, null, null, null)
-      ).rejects.toHaveProperty("state", {
-        _id: ["Cannot update node with no changes."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { _id: ["Cannot update node with no changes."] }
       });
       done();
     });
@@ -380,8 +393,9 @@ describe("NodeManager Module", () => {
       const node = await testHelper.generateTestNode({ createdBy });
       await expect(
         nodeManager.updateNode(node._id, invalidUpdater, null, "bad", "update")
-      ).rejects.toHaveProperty("state", {
-        updatedBy: ["Can only update own nodes."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { updatedBy: ["Can only update own nodes."] }
       });
       done();
     });
@@ -390,12 +404,15 @@ describe("NodeManager Module", () => {
       const updateUser = await testHelper.createTestUser({});
       await expect(
         nodeManager.updateNode(new ObjectId(), updateUser, null, null, null)
-      ).rejects.toHaveProperty("state", {
-        _id: ["Cannot update node with no changes."],
-        content: ["Content must not be empty."],
-        dataType: ["DataType must be TEXT or URL."],
-        title: ["Title must not be empty."],
-        updatedBy: ["Can only update own nodes."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: {
+          _id: ["Cannot update node with no changes."],
+          content: ["Content must not be empty."],
+          dataType: ["DataType must be TEXT or URL."],
+          title: ["Title must not be empty."],
+          updatedBy: ["Can only update own nodes."]
+        }
       });
       done();
     });
@@ -412,8 +429,9 @@ describe("NodeManager Module", () => {
       const node = await testHelper.generateTestNode({ createdBy });
       await expect(
         nodeManager.deleteNode(node._id, invalidDeleter)
-      ).rejects.toHaveProperty("state", {
-        updatedBy: ["Can only update own nodes."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { updatedBy: ["Can only update own nodes."] }
       });
       done();
     });
@@ -422,8 +440,9 @@ describe("NodeManager Module", () => {
       const deleteUser = await testHelper.createTestUser({});
       await expect(
         nodeManager.deleteNode(new ObjectId(), deleteUser)
-      ).rejects.toHaveProperty("state", {
-        updatedBy: ["Can only update own nodes."]
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { updatedBy: ["Can only update own nodes."] }
       });
       done();
     });
