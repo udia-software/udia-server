@@ -4,8 +4,7 @@ const { GraphQLError } = require("graphql");
 
 class ValidationError extends GraphQLError {
   constructor(errors=[]) {
-    super("The request is invalid.");
-    this.state = errors.reduce((result, error) => {
+    let errorState = errors.reduce((result, error) => {
       if (Object.prototype.hasOwnProperty.call(result, error.key)) {
         result[error.key].push(error.message);
       } else {
@@ -13,6 +12,8 @@ class ValidationError extends GraphQLError {
       }
       return result;
     }, {});
+    super("The request is invalid.");
+    this.state = errorState;
   }
 }
 
