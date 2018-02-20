@@ -66,7 +66,7 @@ describe("Auth Module", () => {
     await userManager.createUser(name, email, rawPassword);
     await expect(
       Auth.authenticateUser("mismatch", email, userManager)
-    ).rejects.toEqual(new ValidationError());
+    ).rejects.toHaveProperty("state", { rawPassword: ["Invalid password."] });
     done();
   });
 
@@ -78,7 +78,9 @@ describe("Auth Module", () => {
     await userManager.createUser(name, email, rawPassword);
     await expect(
       Auth.authenticateUser(rawPassword, "not@me.com", userManager)
-    ).rejects.toEqual(new ValidationError());
+    ).rejects.toHaveProperty("state", {
+      email: ["User not found for given email."]
+    });
     done();
   });
 

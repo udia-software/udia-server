@@ -150,7 +150,9 @@ describe("NodeManager Module", () => {
 
       await expect(
         nodeManager.createNode(null, dataType, relationType, title, content)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        createdBy: ["User must be authenticated."]
+      });
       done();
     });
 
@@ -162,7 +164,9 @@ describe("NodeManager Module", () => {
 
       await expect(
         nodeManager.createNode(createdBy, null, relationType, title, content)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        dataType: ["DataType must be TEXT or URL."]
+      });
       done();
     });
 
@@ -174,7 +178,9 @@ describe("NodeManager Module", () => {
 
       await expect(
         nodeManager.createNode(createdBy, dataType, null, title, content)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        relationType: ["RelationType must be POST or COMMENT."]
+      });
       done();
     });
 
@@ -193,7 +199,9 @@ describe("NodeManager Module", () => {
           title,
           content
         )
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        relationType: ["Cannot create top level COMMENT nodes."]
+      });
       done();
     });
 
@@ -214,7 +222,9 @@ describe("NodeManager Module", () => {
           content,
           parentNode._id
         )
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        relationType: ["Cannot create nested POST nodes."]
+      });
       done();
     });
 
@@ -226,7 +236,9 @@ describe("NodeManager Module", () => {
 
       await expect(
         nodeManager.createNode(createdBy, dataType, relationType, null, content)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        title: ["Title must not be empty."]
+      });
       done();
     });
 
@@ -244,7 +256,9 @@ describe("NodeManager Module", () => {
           title,
           content
         )
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        title: ["Title cannot be longer than 300 characters."]
+      });
       done();
     });
 
@@ -256,7 +270,9 @@ describe("NodeManager Module", () => {
 
       await expect(
         nodeManager.createNode(createdBy, dataType, relationType, title, null)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        content: ["Content must not be empty."]
+      });
       done();
     });
 
@@ -274,7 +290,9 @@ describe("NodeManager Module", () => {
           title,
           content
         )
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        content: ["Content cannot be longer than 40000 characters."]
+      });
       done();
     });
 
@@ -293,7 +311,9 @@ describe("NodeManager Module", () => {
           title,
           content
         )
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        content: ["Content must be a valid url."]
+      });
       done();
     });
 
@@ -309,7 +329,7 @@ describe("NodeManager Module", () => {
           "Content",
           fakeId + ""
         )
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", { parentId: ["Parent must exist."] });
       await expect(
         nodeManager.createNode(
           createdBy,
@@ -319,7 +339,9 @@ describe("NodeManager Module", () => {
           "Content",
           "badid"
         )
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        parentId: ["ParentId must be a valid Mongo ObjectID."]
+      });
       done();
     });
 
@@ -334,11 +356,15 @@ describe("NodeManager Module", () => {
           node.title,
           node.content
         )
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        _id: ["Cannot update node with no changes."]
+      });
 
       await expect(
         nodeManager.updateNode(node._id, createdBy, null, null, null)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        _id: ["Cannot update node with no changes."]
+      });
       done();
     });
 
@@ -354,7 +380,9 @@ describe("NodeManager Module", () => {
       const node = await testHelper.generateTestNode({ createdBy });
       await expect(
         nodeManager.updateNode(node._id, invalidUpdater, null, "bad", "update")
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        updatedBy: ["Can only update own nodes."]
+      });
       done();
     });
 
@@ -362,7 +390,13 @@ describe("NodeManager Module", () => {
       const updateUser = await testHelper.createTestUser({});
       await expect(
         nodeManager.updateNode(new ObjectId(), updateUser, null, null, null)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        _id: ["Cannot update node with no changes."],
+        content: ["Content must not be empty."],
+        dataType: ["DataType must be TEXT or URL."],
+        title: ["Title must not be empty."],
+        updatedBy: ["Can only update own nodes."]
+      });
       done();
     });
 
@@ -378,7 +412,9 @@ describe("NodeManager Module", () => {
       const node = await testHelper.generateTestNode({ createdBy });
       await expect(
         nodeManager.deleteNode(node._id, invalidDeleter)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        updatedBy: ["Can only update own nodes."]
+      });
       done();
     });
 
@@ -386,7 +422,9 @@ describe("NodeManager Module", () => {
       const deleteUser = await testHelper.createTestUser({});
       await expect(
         nodeManager.deleteNode(new ObjectId(), deleteUser)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        updatedBy: ["Can only update own nodes."]
+      });
       done();
     });
   });

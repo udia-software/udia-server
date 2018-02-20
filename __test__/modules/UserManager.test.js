@@ -144,7 +144,9 @@ describe("UserManager Module", () => {
       await userManager.createUser(username, email, rawPassword);
       await expect(
         userManager.createUser(username, email + "1", rawPassword)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        username: ["Username is already in use by another user."]
+      });
       done();
     });
 
@@ -157,7 +159,9 @@ describe("UserManager Module", () => {
 
       await expect(
         userManager.createUser(username, email, rawPassword)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        username: ["Username cannot be empty."]
+      });
       done();
     });
 
@@ -168,7 +172,12 @@ describe("UserManager Module", () => {
 
       await expect(
         userManager.createUser(username, email, rawPassword)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        username: [
+          "Username must be alphanumeric with underscores.",
+          "Username cannot be over 15 characters long."
+        ]
+      });
       done();
     });
 
@@ -180,7 +189,9 @@ describe("UserManager Module", () => {
       await userManager.createUser(username, email, rawPassword);
       await expect(
         userManager.createUser(username + "1", email, rawPassword)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        email: ["Email is already in use by another user."]
+      });
       done();
     });
 
@@ -191,7 +202,7 @@ describe("UserManager Module", () => {
 
       await expect(
         userManager.createUser(username, email, rawPassword)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", { email: ["Email cannot be empty."] });
       done();
     });
 
@@ -202,20 +213,26 @@ describe("UserManager Module", () => {
 
       await expect(
         userManager.createUser(username, email, rawPassword)
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        email: ["Email must be in the form quantifier@domain.tld."]
+      });
       done();
     });
 
     it("should error on creating user with weak password", async done => {
-      const username = "No_Password_User";
+      const username = "No_Password";
       const email = "test@test.com";
 
-      await expect(userManager.createUser(username, email, "")).rejects.toEqual(
-        new ValidationError()
-      );
+      await expect(
+        userManager.createUser(username, email, "")
+      ).rejects.toHaveProperty("state", {
+        password: ["Password cannot be empty."]
+      });
       await expect(
         userManager.createUser(username, email, "weak")
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        password: ["Password must be 6 or more characters."]
+      });
       done();
     });
 
@@ -270,9 +287,11 @@ describe("UserManager Module", () => {
     });
 
     it("should not send an email confirmation for unauthenticated users", async done => {
-      await expect(userManager.resendConfirmationEmail(null)).rejects.toEqual(
-        new ValidationError()
-      );
+      await expect(
+        userManager.resendConfirmationEmail(null)
+      ).rejects.toHaveProperty("state", {
+        createdBy: ["User must be authenticated."]
+      });
       done();
     });
 
@@ -287,7 +306,9 @@ describe("UserManager Module", () => {
       });
       await expect(
         userManager.changeEmail(user, "popular@test.com")
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        email: ["Email is already in use by another user."]
+      });
       done();
     });
 
@@ -298,14 +319,18 @@ describe("UserManager Module", () => {
       });
       await expect(
         userManager.changeEmail(user, "static@test.com")
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        email: ["New email is the same as old email."]
+      });
       done();
     });
 
     it("should error when changing email while unauthorized", async done => {
       await expect(
         userManager.changeEmail(null, "how@test.com")
-      ).rejects.toEqual(new ValidationError());
+      ).rejects.toHaveProperty("state", {
+        createdBy: ["User must be authenticated."]
+      });
       done();
     });
 
@@ -322,7 +347,9 @@ describe("UserManager Module", () => {
       );
       await expect(
         userManager.updatePasswordWithToken(passResetToken, newPass)
-      ).rejects.toEqual(new ValidationError([]));
+      ).rejects.toHaveProperty("state", {
+        token: ["Invalid password reset token."]
+      });
       done();
     });
 
@@ -333,9 +360,11 @@ describe("UserManager Module", () => {
         email: userEmail,
         username: "forgetme"
       });
-      await expect(userManager.updatePassword(user, weakPass)).rejects.toEqual(
-        new ValidationError([])
-      );
+      await expect(
+        userManager.updatePassword(user, weakPass)
+      ).rejects.toHaveProperty("state", {
+        password: ["Password must be 6 or more characters."]
+      });
       done();
     });
   });
