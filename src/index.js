@@ -97,26 +97,25 @@ const start = async () => {
   }
 
   const server = createServer(app);
-  let subscriptionServer = null;
-  server.listen(PORT, () => {
-    subscriptionServer = SubscriptionServer.create(
-      {
-        execute,
-        subscribe,
-        schema,
-        onConnect: args => {
-          return {
-            ...args,
-            Nodes: new NodeManager(db.collection("nodes")),
-            Users: new UserManager(db.collection("users"))
-          };
-        }
-      },
-      {
-        server,
-        path: "/subscriptions"
+  const subscriptionServer = SubscriptionServer.create(
+    {
+      execute,
+      subscribe,
+      schema,
+      onConnect: args => {
+        return {
+          ...args,
+          Nodes: new NodeManager(db.collection("nodes")),
+          Users: new UserManager(db.collection("users"))
+        };
       }
-    );
+    },
+    {
+      server,
+      path: "/subscriptions"
+    }
+  );
+  server.listen(PORT, () => {
     // coverage don't care about non test console output.
     /* istanbul ignore next */
     if (NODE_ENV !== "test") {

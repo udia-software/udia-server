@@ -3,7 +3,6 @@
 const Auth = require("../../src/modules/Auth");
 const UserManager = require("../../src/modules/UserManager");
 const { EMAIL_TOKEN_TIMEOUT, TOKEN_TYPES } = require("../../src/constants");
-const { ValidationError } = require("../../src/modules/Errors");
 const testHelper = require("../testhelper");
 
 let db = null;

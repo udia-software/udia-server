@@ -2,7 +2,6 @@
 
 const { ObjectId } = require("mongodb");
 const NodeManager = require("../../src/modules/NodeManager");
-const { ValidationError } = require("../../src/modules/Errors");
 const testHelper = require("../testhelper");
 
 let db = null;

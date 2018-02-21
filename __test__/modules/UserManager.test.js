@@ -4,7 +4,6 @@ const { ObjectId } = require("mongodb");
 const MockDate = require("mockdate");
 const UserManager = require("../../src/modules/UserManager");
 const Auth = require("../../src/modules/Auth");
-const { ValidationError } = require("../../src/modules/Errors");
 const { EMAIL_TOKEN_TIMEOUT, TOKEN_TYPES } = require("../../src/constants");
 const testHelper = require("../testhelper");
 
