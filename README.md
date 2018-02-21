@@ -1,9 +1,9 @@
 # Udia Server
 
-[![Build Status](https://img.shields.io/travis/udia-software/udia-server.svg)](https://travis-ci.org/udia-software/udia-server)
-[![Coverage Status](https://img.shields.io/coveralls/github/udia-software/udia-server.svg)](https://coveralls.io/github/udia-software/udia-server?branch=master)
-[![David](https://img.shields.io/david/udia-software/udia-server.svg)](https://david-dm.org/udia-software/udia-server)
-[![David](https://img.shields.io/david/dev/udia-software/udia-server.svg)](https://david-dm.org/udia-software/udia-server?type=dev)
+[![Build Status](https://img.shields.io/travis/udia-software/udia-server/master.svg?style=flat-square)](https://travis-ci.org/udia-software/udia-server)
+[![Coverage Status](https://img.shields.io/coveralls/github/udia-software/udia-server/master.svg?style=flat-square)](https://coveralls.io/github/udia-software/udia-server?branch=master)
+[![David](https://img.shields.io/david/udia-software/udia-server.svg?style=flat-square)](https://david-dm.org/udia-software/udia-server)
+[![David](https://img.shields.io/david/dev/udia-software/udia-server.svg?style=flat-square)](https://david-dm.org/udia-software/udia-server?type=dev)
 
 * Note: This is not ready for production.
 
@@ -25,6 +25,12 @@
 **Afterwards**
 
 4. GraphQL endpoint should be up at [http://localhost:3000/graphql](http://localhost:3000/graphql) and GraphiQL should be up at [http://localhost:3000/graphiql](http://localhost:3000/graphiql).
+
+## Testing and Linting
+
+If not using docker, run `npm test` for tests and `npm run lint` for eslint.
+
+If using docker, run `docker-compose run web sleep 2 && npm test` for tests and `docker-compose run web npm run lint` for eslint.
 
 ## Environment Variables
 
