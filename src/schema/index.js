@@ -143,7 +143,7 @@ const typeDefs = `
 
   type Subscription {
     NodeSubscription(filter: NodeSubscriptionFilter): NodeSubscriptionPayload
-    UserSubscription(filter: UserSubscriptionFilter): UserSubscriptionPayload
+    UserSubscription: UserSubscriptionPayload
   }
   
   input NodeSubscriptionFilter {
@@ -156,10 +156,6 @@ const typeDefs = `
     node: Node!
   }
   
-  input UserSubscriptionFilter {
-    jwt: String!
-  }
-
   type UserSubscriptionPayload {
     user: FullUser!
   }

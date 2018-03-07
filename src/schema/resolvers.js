@@ -2,7 +2,7 @@
 
 const { Kind } = require("graphql/language");
 const { withFilter } = require("graphql-subscriptions");
-const { authenticateUser, getIdFromJWT } = require("../modules/Auth");
+const { authenticateUser } = require("../modules/Auth");
 const { AUDIT_ACTIVITIES } = require("../constants");
 const pubSub = require("../pubsub");
 
@@ -216,9 +216,8 @@ module.exports = {
     UserSubscription: {
       subscribe: withFilter(
         () => pubSub.asyncIterator("User"),
-        ({ UserSubscription }, { filter }) => {
-          const userId = getIdFromJWT(filter.jwt);
-          return "" + userId === "" + UserSubscription.user._id;
+        ({ UserSubscription }, _, { user }) => {
+          return "" + user._id === "" + UserSubscription.user._id;
         }
       )
     }

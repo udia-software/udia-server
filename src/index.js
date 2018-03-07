@@ -22,6 +22,34 @@ const AuditManager = require("./modules/AuditManager");
 const NodeManager = require("./modules/NodeManager");
 const UserManager = require("./modules/UserManager");
 
+const _buildMongoIndexes = async db => {
+  const usersIndexes = [
+    {
+      key: {
+        username: 1
+      },
+      collation: { locale: "en", strength: 2 },
+      name: "username",
+      unique: true
+    },
+    {
+      key: {
+        email: 1
+      },
+      collation: { locale: "en", strength: 2 },
+      name: "email",
+      unique: true
+    }
+  ];
+  try {
+    await db.collection("users").createIndexes(usersIndexes);
+  } catch (error) /* istanbul ignore next */ {
+    // Coverage don't care about rebuilding the indexes
+    await db.collection("users").dropIndexes();
+    await db.collection("users").createIndexes(usersIndexes);
+  }
+};
+
 const start = async () => {
   const _mongo = await connectMongo().catch(
     // coverage don't care about mongo client connection errors.
@@ -46,6 +74,8 @@ const start = async () => {
     );
   }
 
+  await _buildMongoIndexes(db);
+
   // coverage don't care about production salt rounds.
   /* istanbul ignore next */
   if (NODE_ENV === "production") {
@@ -59,8 +89,6 @@ const start = async () => {
 
   const buildOptions = async req => {
     const userManager = new UserManager(db.collection("users"));
-    await db.collection("users").ensureIndex("username");
-    await db.collection("users").ensureIndex("email");
     const user = await verifyUserJWT(req, userManager);
     return {
       context: {

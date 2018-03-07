@@ -147,6 +147,14 @@ describe("UserManager Module", () => {
         message: "The request is invalid.",
         state: { username: ["Username is already in use by another user."] }
       });
+
+      // handles case insensitivity
+      await expect(
+        userManager.createUser(username.toLowerCase(), email + "1", rawPassword)
+      ).rejects.toMatchObject({
+        message: "The request is invalid.",
+        state: { username: ["Username is already in use by another user."] }
+      });
       done();
     });
 
