@@ -7,6 +7,8 @@ const { graphqlExpress, graphiqlExpress } = require("apollo-server-express");
 const { execute, subscribe, formatError } = require("graphql");
 const { createServer } = require("http");
 const { SubscriptionServer } = require("subscriptions-transport-ws");
+const winston = require("winston");
+const expressWinston = require("express-winston");
 
 const {
   PORT,
@@ -48,6 +50,30 @@ const _buildMongoIndexes = async db => {
     await db.collection("users").dropIndexes();
     await db.collection("users").createIndexes(usersIndexes);
   }
+};
+
+const winstonLoggerConfig = {
+  transports: [
+    new winston.transports.Console({
+      json: true,
+      colorize: false
+    })
+  ],
+  meta: true,
+  msg: (req, res) => {
+    const operationName = (req.body || {}).operationName || "NO-OP";
+    return `${res.statusCode} ${req.method} ${req.url} ${operationName} ${res.responseTime}ms`;
+  },
+  requestWhitelist: ["body"],
+  requestFilter: (req, propName) => {
+    if (propName === "body") {
+      return { operationName: "NO-OP", ...((req || {})[propName] || {}), variables: undefined };
+    }
+    return req[propName];
+  },
+  responseWhitelist: ["body"],
+  expressFormat: false,
+  colorize: false
 };
 
 const start = async () => {
@@ -108,6 +134,7 @@ const start = async () => {
     };
   };
   app.set("trust proxy", ["loopback", "linklocal", "uniquelocal"]);
+  app.use(expressWinston.logger(winstonLoggerConfig));
   app.use(cors());
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
   // coverage don't care about vetting developer graphiql route
@@ -123,6 +150,7 @@ const start = async () => {
       })
     );
   }
+  app.use(expressWinston.errorLogger(winstonLoggerConfig));
 
   const server = createServer(app);
   const subscriptionServer = SubscriptionServer.create(
