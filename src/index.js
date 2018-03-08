@@ -7,7 +7,6 @@ const { graphqlExpress, graphiqlExpress } = require("apollo-server-express");
 const { execute, subscribe, formatError } = require("graphql");
 const { createServer } = require("http");
 const { SubscriptionServer } = require("subscriptions-transport-ws");
-const { format } = require("util");
 
 const {
   PORT,
@@ -16,7 +15,7 @@ const {
   SALT_ROUNDS,
   MONGODB_DB_NAME
 } = require("./constants");
-const logger = require("./logger");
+const { logger, middlewareLogger } = require("./logger");
 const connectMongo = require("./connectMongo");
 const schema = require("./schema");
 const { verifyUserJWT } = require("./modules/Auth");
@@ -50,51 +49,6 @@ const _buildMongoIndexes = async db => {
     await db.collection("users").dropIndexes();
     await db.collection("users").createIndexes(usersIndexes);
   }
-};
-
-const middlewareLogger = (req, res, next) => {
-  const reqStarted = new Date();
-  const reqURL = req.url;
-  const resWrite = res.write;
-  const resEnd = res.end;
-  const chunks = [];
-
-  res.write = chunk => {
-    chunks.push(new Buffer(chunk));
-    resWrite.call(res, chunk);
-  };
-
-  res.end = (chunk, encoding) => {
-    const reqOpName = ((res.req || {}).body || {}).operationName || "GQL-NO-OP";
-    const responseTime = new Date() - reqStarted;
-    res.end = resEnd;
-    res.end(chunk, encoding);
-
-    let error = null;
-    if (chunk) chunks.push(new Buffer(chunk));
-
-    if (reqOpName !== "GQL-NO-OP") {
-      const resBody = Buffer.concat(chunks).toString("utf8");
-      try {
-        const jsonResBody = JSON.parse(resBody);
-        error = !!jsonResBody.errors;
-      } catch (error) {
-        logger.warn(error);
-      }
-    }
-    logger.info(
-      format(
-        "%s %s %s %s %s %dms",
-        res.statusCode,
-        req.method,
-        reqURL,
-        reqOpName,
-        error === null ? "OK" : error ? "GQL-ERR" : "GQL-OK",
-        responseTime
-      )
-    );
-  };
-  next();
 };
 
 const start = async () => {
