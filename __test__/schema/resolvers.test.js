@@ -280,6 +280,25 @@ describe("Resolvers", () => {
 
       done();
     });
+
+    it("should handle invalid queries", async done => {
+      const query = "query me { me { } }";
+      let data = { query };
+      try {
+        await client.post("/graphql", data);
+      } catch ({ config, request, response }) {
+        expect(response.status).toBe(400);
+        expect(response.data).toEqual({
+          errors: [
+            {
+              locations: [{ column: 17, line: 1 }],
+              message: "Syntax Error: Expected Name, found }"
+            }
+          ]
+        });
+        done();
+      }
+    });
   });
 
   describe("Mutation", () => {
@@ -825,5 +844,71 @@ describe("Resolvers", () => {
       expect(response.data.data.updatePassword.username).toEqual(user.username);
       done();
     });
+
+    it("should handle invalid mutations", async done => {
+      const query = `
+      mutation createUser(
+        $email: String!,
+        $username: String!,
+        $password: String!
+      ) {
+        createUser(email: $email, username: $username, password: $password) {
+          token
+          user {
+            _id
+            username
+            createdNodes {
+              _id
+            }
+            createdAt
+            updatedAt
+            email
+            passwordHash
+          }
+        }
+      }`;
+      const reqBody = {
+        query,
+        variables: {
+          email: "",
+          username: "",
+          password: ""
+        }
+      };
+      const { status, statusText, data } = await client.post(
+        "/graphql",
+        reqBody
+      );
+      expect(status).toBe(200);
+      expect(statusText).toEqual("OK");
+      expect(data).toEqual({
+        data: null,
+        errors: [
+          {
+            locations: [{ column: 9, line: 7 }],
+            message: "The request is invalid.",
+            path: ["createUser"],
+            state: {
+              email: ["Email cannot be empty."],
+              password: ["Password cannot be empty."],
+              username: ["Username cannot be empty."]
+            }
+          }
+        ]
+      });
+      done();
+    });
+  });
+});
+
+describe("Misc HTTP Calls", () => {
+  it("should handle arbitrary GET", async done => {
+    try {
+      await client.get("/graphql");
+    } catch ({ config, request, response }) {
+      expect(response.status).toBe(400);
+      expect(response.data).toEqual("GET query missing.");
+      done();
+    }
   });
 });

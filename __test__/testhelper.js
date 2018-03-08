@@ -3,6 +3,7 @@
 const auth = require("../src/modules/Auth");
 const connectMongo = require("../src/connectMongo");
 const { NODE_ENV } = require("../src/constants");
+const logger = require("../src/logger");
 
 let _mongo = null;
 
@@ -13,8 +14,7 @@ let _mongo = null;
 async function initializeTestState(clearDatabase = true) {
   if (!_mongo) {
     _mongo = await connectMongo().catch(err => {
-      // eslint-disable-next-line no-console
-      console.error(err);
+      logger.error(err);
       process.exit(1);
     });
   }

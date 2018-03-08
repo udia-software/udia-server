@@ -1,6 +1,7 @@
 "use strict";
 
 const nodemailer = require("nodemailer");
+const logger = require("../logger");
 const {
   SMTP_USERNAME,
   SMTP_PASSWORD,
@@ -58,8 +59,7 @@ async function sendEmailVerification(user, validationToken) {
   } catch (err) {
     // coverage don't care about send mail failure, tests never fails
     /* istanbul ignore next */
-    // eslint-disable-next-line no-console
-    console.error("sendEmailVerification failed", err);
+    logger.error("sendEmailVerification failed", err);
   }
 }
 
@@ -82,8 +82,7 @@ async function sendForgotPasswordEmail(user, validationToken) {
   } catch (err) {
     // coverage don't care about send mail failure, tests never fails
     /* istanbul ignore next */
-    // eslint-disable-next-line no-console
-    console.error("sendForgotPasswordEmail failed", err);
+    logger.error("sendForgotPasswordEmail failed", err);
   }
 }
 

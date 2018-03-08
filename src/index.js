@@ -15,6 +15,7 @@ const {
   SALT_ROUNDS,
   MONGODB_DB_NAME
 } = require("./constants");
+const { logger, middlewareLogger } = require("./logger");
 const connectMongo = require("./connectMongo");
 const schema = require("./schema");
 const { verifyUserJWT } = require("./modules/Auth");
@@ -104,10 +105,12 @@ const start = async () => {
           state: error.originalError && error.originalError.state
         };
       },
-      schema
+      schema,
+      debug: false
     };
   };
   app.set("trust proxy", ["loopback", "linklocal", "uniquelocal"]);
+  app.use(middlewareLogger);
   app.use(cors());
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
   // coverage don't care about vetting developer graphiql route
@@ -144,12 +147,7 @@ const start = async () => {
     }
   );
   server.listen(PORT, () => {
-    // coverage don't care about non test console output.
-    /* istanbul ignore next */
-    if (NODE_ENV !== "test") {
-      // eslint-disable-next-line no-console
-      console.log(`UDIA GraphQL server running on port ${PORT}.`);
-    }
+    logger.info(`UDIA GraphQL ${NODE_ENV} server running on port ${PORT}.`);
   });
 
   server.on("close", async () => {
