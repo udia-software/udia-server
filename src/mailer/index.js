@@ -1,7 +1,7 @@
 "use strict";
 
 const nodemailer = require("nodemailer");
-const logger = require("../logger");
+const { logger } = require("../logger");
 const {
   SMTP_USERNAME,
   SMTP_PASSWORD,
@@ -55,7 +55,7 @@ async function sendEmailVerification(user, validationToken) {
     html: `<p>This is your validation token. It is valid one hour after request generation.</p></p>${validationToken}</p>`
   };
   try {
-    return await transport.sendMail(payload);
+    transport.sendMail(payload);
   } catch (err) {
     // coverage don't care about send mail failure, tests never fails
     /* istanbul ignore next */
@@ -78,7 +78,7 @@ async function sendForgotPasswordEmail(user, validationToken) {
     html: `<p>This is your password reset token. It is valid one hour after request generation.</p></p>${validationToken}</p>`
   };
   try {
-    return await transport.sendMail(payload);
+    await transport.sendMail(payload);
   } catch (err) {
     // coverage don't care about send mail failure, tests never fails
     /* istanbul ignore next */

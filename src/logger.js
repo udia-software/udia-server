@@ -42,7 +42,11 @@ switch (NODE_ENV) {
   // coverage don't care about development logger configuration
   /* istanbul ignore next */
   default:
-    logger = createLogger({ ...loggerConfig, level: "debug" }).add(
+    logger = createLogger({
+      ...loggerConfig,
+      format: format.combine(format.timestamp(), format.prettyPrint()),
+      level: "debug"
+    }).add(
       new transports.File({
         filename: "logs/dev.log",
         maxsize: 10 * 1024 * 1024,
@@ -80,8 +84,10 @@ const middlewareLogger = (req, res, next) => {
     if (reqOpName !== "GQL-NO-OP") {
       const resBody = Buffer.concat(chunks).toString("utf8");
       try {
-        const jsonResBody = JSON.parse(resBody);
-        error = !!jsonResBody.errors;
+        const {data, errors} = JSON.parse(resBody);
+        logger.debug(data || {});
+        logger.debug(errors || {});
+        error = !!errors;
       } catch (error) {
         // coverage don't care about edge case server returns malformed JSON
         /* istanbul ignore next */
@@ -111,4 +117,3 @@ module.exports = {
   middlewareLogger,
   logger
 };
-module.exports.default = logger;

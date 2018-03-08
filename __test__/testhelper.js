@@ -3,7 +3,7 @@
 const auth = require("../src/modules/Auth");
 const connectMongo = require("../src/connectMongo");
 const { NODE_ENV } = require("../src/constants");
-const logger = require("../src/logger");
+const { logger } = require("../src/logger");
 
 let _mongo = null;
 
