@@ -16,6 +16,7 @@ const {
   MONGODB_DB_NAME
 } = require("./constants");
 const { logger, middlewareLogger } = require("./logger");
+const { metric } = require("./metric");
 const connectMongo = require("./connectMongo");
 const schema = require("./schema");
 const { verifyUserJWT } = require("./modules/Auth");
@@ -126,6 +127,10 @@ const start = async () => {
       })
     );
   }
+
+  app.get("/", (req, res) => {
+    res.json(metric());
+  });
 
   const server = createServer(app);
   const subscriptionServer = SubscriptionServer.create(

@@ -84,9 +84,15 @@ const middlewareLogger = (req, res, next) => {
     if (reqOpName !== "GQL-NO-OP") {
       const resBody = Buffer.concat(chunks).toString("utf8");
       try {
-        const {data, errors} = JSON.parse(resBody);
-        logger.debug(data || {});
-        logger.debug(errors || {});
+        const { data, errors } = JSON.parse(resBody);
+        /* istanbul ignore next */
+        if (data) {
+          logger.debug(data);
+        }
+        /* istanbul ignore next */
+        if (errors) {
+          logger.debug(errors);
+        }
         error = !!errors;
       } catch (error) {
         // coverage don't care about edge case server returns malformed JSON

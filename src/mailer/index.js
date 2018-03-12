@@ -1,9 +1,7 @@
 "use strict";
 
 const nodemailer = require("nodemailer");
-const {
-  logger
-} = require("../logger");
+const { logger } = require("../logger");
 const {
   SMTP_USERNAME,
   SMTP_PASSWORD,
@@ -29,7 +27,7 @@ if (NODE_ENV === "development") {
   config = {
     streamTransport: true,
     newline: "unix",
-    buffer: true,
+    buffer: true
   };
 } else if (NODE_ENV === "test") {
   config = {
@@ -59,13 +57,18 @@ async function sendEmailVerification(user, validationToken) {
     text: `This is your validation token. It is valid one hour after request generation.\n${validationToken}`,
     html: `<p>This is your validation token. It is valid one hour after request generation.</p></p>${validationToken}</p>`
   };
-  transport.sendMail(payload).then(info => {
-    logger.info("sendEmailVerification sent", info);
-  }).catch(err => {
-    // coverage don't care about send mail failure, tests never fails
-    /* istanbul ignore next */
-    logger.error("sendEmailVerification failed", err);
-  });
+  transport
+    .sendMail(payload)
+    .then(info => {
+      logger.info("sendEmailVerification sent", info);
+    })
+    .catch(
+      // coverage don't care about send mail failure, tests never fails
+      /* istanbul ignore next */
+      err => {
+        logger.error("sendEmailVerification failed", err);
+      }
+    );
 }
 
 async function sendForgotPasswordEmail(user, validationToken) {
@@ -82,13 +85,18 @@ async function sendForgotPasswordEmail(user, validationToken) {
     text: `This is your password reset token. It is valid one hour after request generation.\n${validationToken}`,
     html: `<p>This is your password reset token. It is valid one hour after request generation.</p></p>${validationToken}</p>`
   };
-  transport.sendMail(payload).then(info => {
-    logger.info("sendForgotPasswordEmail sent", info);
-  }).catch(err => {
-    // coverage don't care about send mail failure, tests never fails
-    /* istanbul ignore next */
-    logger.error("sendForgotPasswordEmail failed", err);
-  });
+  transport
+    .sendMail(payload)
+    .then(info => {
+      logger.info("sendForgotPasswordEmail sent", info);
+    })
+    .catch(
+      // coverage don't care about send mail failure, tests never fails
+      /* istanbul ignore next */
+      err => {
+        logger.error("sendForgotPasswordEmail failed", err);
+      }
+    );
 }
 
 module.exports = {
