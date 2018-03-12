@@ -8,8 +8,9 @@ const {
   freemem,
   totalmem,
   release,
-  uptime
+  uptime: os_uptime
 } = require("os");
+const { uptime: p_uptime } = require("process");
 const { version } = require("../package.json");
 
 function metric() {
@@ -22,10 +23,11 @@ function metric() {
     endianness: endianness(),
     freemem: freemem(),
     totalmem: totalmem(),
-    uptime: uptime(),
+    os_uptime: Math.floor(os_uptime()),
+    p_uptime: Math.floor(p_uptime()),
     timestamp: Date.now(),
     loadavg: loadavg(),
-    cpus: cpus(),
+    cpus: cpus()
   };
 }
 

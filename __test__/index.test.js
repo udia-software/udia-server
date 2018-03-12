@@ -35,7 +35,8 @@ describe("Index", () => {
     expect(metrics.data).toHaveProperty("release");
     expect(metrics.data).toHaveProperty("timestamp");
     expect(metrics.data).toHaveProperty("totalmem");
-    expect(metrics.data).toHaveProperty("uptime");
+    expect(metrics.data).toHaveProperty("os_uptime");
+    expect(metrics.data).toHaveProperty("p_uptime");
     expect(metrics.data).toHaveProperty("version");
     await server.close();
     done();
