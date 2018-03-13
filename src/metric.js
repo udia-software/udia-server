@@ -10,12 +10,13 @@ const {
   release,
   uptime: os_uptime
 } = require("os");
-const { uptime: p_uptime } = require("process");
+const { uptime: p_uptime, version: node_version } = require("process");
 const { version } = require("../package.json");
 
 function metric() {
   return {
     version,
+    node_version,
     arch: arch(),
     hostname: hostname(),
     platform: platform(),

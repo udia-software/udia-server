@@ -11,7 +11,6 @@ const {
 } = require("../constants");
 
 let config = {
-  pool: true,
   host: SMTP_HOST,
   port: SMTP_PORT,
   secure: true,
@@ -36,6 +35,13 @@ if (NODE_ENV === "development") {
   };
 }
 const transport = nodemailer.createTransport(config);
+transport.verify((error, success) => {
+  if (error) {
+    logger.error(error);
+  } else {
+    logger.debug(success);
+  }
+});
 
 // https://nodemailer.com/message/
 /**
@@ -46,8 +52,8 @@ const transport = nodemailer.createTransport(config);
 async function sendEmailVerification(user, validationToken) {
   const payload = {
     from: {
-      name: "UDIA Server",
-      address: "server@udia.ca"
+      name: "UDIA",
+      address: "do-not-reply@udia.ca"
     },
     to: {
       name: user.username,
@@ -74,8 +80,8 @@ async function sendEmailVerification(user, validationToken) {
 async function sendForgotPasswordEmail(user, validationToken) {
   const payload = {
     from: {
-      name: "UDIA Server",
-      address: "server@udia.ca"
+      name: "UDIA",
+      address: "do-not-reply@udia.ca"
     },
     to: {
       name: user.username,
