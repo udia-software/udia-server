@@ -281,6 +281,61 @@ describe("Resolvers", () => {
       done();
     });
 
+    it("should validly query for health metrics", async done => {
+      const query = `
+      query healthMetric { 
+        healthMetric {
+          version
+          node_version
+          arch
+          hostname
+          platform
+          release
+          endianness
+          freemem_GiB
+          freemem_GB
+          totalmem_GiB
+          totalmem_GB
+          os_uptime
+          p_uptime
+          now
+          loadavg
+          cpus {
+            model
+            speed
+            times {
+              user
+              nice
+              sys
+              idle
+              irq
+            }
+          }
+        }
+      }`;
+      let data = { query };
+      const metricResponse = await client.post("/graphql", data);
+      expect(metricResponse.status).toBe(200);
+      const metricResponseData = metricResponse.data.data.healthMetric;
+      expect(metricResponseData).toHaveProperty("arch");
+      expect(metricResponseData).toHaveProperty("cpus");
+      expect(metricResponseData).toHaveProperty("endianness");
+      expect(metricResponseData).toHaveProperty("hostname");
+      expect(metricResponseData).toHaveProperty("loadavg");
+      expect(metricResponseData).toHaveProperty("platform");
+      expect(metricResponseData).toHaveProperty("release");
+      expect(metricResponseData).toHaveProperty("now");
+      expect(metricResponseData).toHaveProperty("freemem_GiB");
+      expect(metricResponseData).toHaveProperty("totalmem_GiB");
+      expect(metricResponseData).toHaveProperty("freemem_GB");
+      expect(metricResponseData).toHaveProperty("totalmem_GB");
+      expect(metricResponseData).toHaveProperty("os_uptime");
+      expect(metricResponseData).toHaveProperty("p_uptime");
+      expect(metricResponseData).toHaveProperty("version");
+      expect(metricResponseData).toHaveProperty("node_version");
+      done();
+    });
+
     it("should handle invalid queries", async done => {
       const query = "query me { me { } }";
       let data = { query };
