@@ -92,6 +92,7 @@ const typeDefs = `
       first: Int
     ): [Node!]!
     me: FullUser
+    healthMetric: HealthMetric
   }
 
   ${"" /* Mutations */}  
@@ -144,6 +145,7 @@ const typeDefs = `
   type Subscription {
     NodeSubscription(filter: NodeSubscriptionFilter): NodeSubscriptionPayload
     UserSubscription: UserSubscriptionPayload
+    HealthMetricSubscription: HealthMetric
   }
   
   input NodeSubscriptionFilter {
@@ -163,6 +165,41 @@ const typeDefs = `
   enum ModelMutationType {
     CREATED,
     UPDATED
+  }
+
+  ${"" /* Misc. Metrics */}
+
+  type HealthMetric {
+    version: String!
+    node_version: String!
+    arch: String!
+    hostname: String!
+    platform: String!
+    release: String!
+    endianness: String!
+    freemem_GiB: Float!
+    totalmem_GiB: Float!
+    freemem_GB: Float!
+    totalmem_GB: Float!
+    os_uptime: Int!
+    p_uptime: Int!
+    now: DateTime!
+    loadavg: [Float]!
+    cpus: [Cpu]!
+  }
+
+  type Cpu {
+    model: String!
+    speed: Int!
+    times: CpuTime!
+  }
+
+  type CpuTime {
+    user: Int!
+    nice: Int!
+    sys: Int!
+    idle: Int!
+    irq: Int!
   }
 
   scalar DateTime

@@ -17,6 +17,7 @@ const {
 } = require("./constants");
 const { logger, middlewareLogger } = require("./logger");
 const { metric } = require("./metric");
+const pubSub = require("./pubsub");
 const connectMongo = require("./connectMongo");
 const schema = require("./schema");
 const { verifyUserJWT } = require("./modules/Auth");
@@ -151,13 +152,23 @@ const start = async () => {
       path: "/subscriptions"
     }
   );
+
+  let metricSubscriptionInterval = null;
+
   server.listen(PORT, () => {
     logger.info(`UDIA GraphQL ${NODE_ENV} server running on port ${PORT}.`);
+    metricSubscriptionInterval = setInterval(() => {
+      const healthMetric = metric();
+      pubSub.publish("HealthMetric", {
+        HealthMetricSubscription: { ...healthMetric }
+      });
+    }, 1000);
   });
 
   server.on("close", async () => {
     // subscriptionServer can be null if server immediately closes
     subscriptionServer && (await subscriptionServer.close());
+    clearInterval(metricSubscriptionInterval);
     await _mongo.close();
   });
 

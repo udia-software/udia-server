@@ -4,6 +4,7 @@ const { Kind } = require("graphql/language");
 const { withFilter } = require("graphql-subscriptions");
 const { authenticateUser } = require("../modules/Auth");
 const { AUDIT_ACTIVITIES } = require("../constants");
+const { metric } = require("../metric");
 const pubSub = require("../pubsub");
 
 module.exports = {
@@ -13,6 +14,9 @@ module.exports = {
     },
     me: async (_root, _data, { user }) => {
       return user;
+    },
+    healthMetric: async (_root, _data, _context) => {
+      return metric();
     }
   },
   Mutation: {
@@ -220,6 +224,9 @@ module.exports = {
           return "" + user._id === "" + UserSubscription.user._id;
         }
       )
+    },
+    HealthMetricSubscription: {
+      subscribe: () => pubSub.asyncIterator("HealthMetric")
     }
   },
   Node: {

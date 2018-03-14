@@ -35,13 +35,6 @@ if (NODE_ENV === "development") {
   };
 }
 const transport = nodemailer.createTransport(config);
-transport.verify((error, success) => {
-  if (error) {
-    logger.error(error);
-  } else {
-    logger.debug(success);
-  }
-});
 
 // https://nodemailer.com/message/
 /**
