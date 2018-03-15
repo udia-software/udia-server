@@ -13,7 +13,8 @@ const {
   NODE_ENV,
   TEST_JWT,
   SALT_ROUNDS,
-  MONGODB_DB_NAME
+  MONGODB_DB_NAME,
+  CORS_ORIGIN
 } = require("./constants");
 const { logger, middlewareLogger } = require("./logger");
 const { metric } = require("./metric");
@@ -113,8 +114,9 @@ const start = async () => {
   };
   app.set("trust proxy", ["loopback", "linklocal", "uniquelocal"]);
   app.use(middlewareLogger);
-  app.use(cors());
+  app.use(cors({ origin: CORS_ORIGIN }));
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
+
   // coverage don't care about vetting developer graphiql route
   /* istanbul ignore next */
   if (NODE_ENV !== "production") {

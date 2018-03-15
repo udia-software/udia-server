@@ -7,6 +7,7 @@ module.exports = {
   NODE_ENV: process.env.NODE_ENV || "development",
   JWT_SECRET: process.env.JWT_SECRET || "UDIA Development JWT Secret Key",
   MONGODB_URI: process.env.MONGODB_URI || "mongodb://localhost:27017",
+  MONGODB_DB_NAME: process.env.MONGODB_DB_NAME || "",
   PORT: process.env.PORT || "3000",
   SALT_ROUNDS: process.env.SALT_ROUNDS || "12",
   TEST_JWT: process.env.TEST_JWT || "",
@@ -16,7 +17,9 @@ module.exports = {
   SMTP_PORT: process.env.SMTP_PORT || "587",
   EMAIL_TOKEN_TIMEOUT: process.env.EMAIL_TOKEN_TIMEOUT || "3600000",
   REDIS_URL: process.env.REDIS_URL || "",
-  MONGODB_DB_NAME: process.env.MONGODB_DB_NAME || "",
+  CORS_ORIGIN: process.env.CORS_ORIGIN || "*",
+  CLIENT_DOMAINNAME: process.env.CLIENT_DOMAINNAME || "localhost:3001",
+  CLIENT_PROTOCOL: process.env.CLIENT_PROTOCOL || "http",
   // static strings
   TOKEN_TYPES: {
     TOKEN_TYPE_VERIFY_EMAIL: "VERIFY_EMAIL",

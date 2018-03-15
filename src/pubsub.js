@@ -1,7 +1,8 @@
 "use strict";
-const { REDIS_URL } = require("./constants");
 const { PubSub } = require("graphql-subscriptions");
 const { RedisPubSub } = require("graphql-redis-subscriptions");
+const { REDIS_URL } = require("./constants");
+const { metric } = require("./metric");
 
 // default development pubSub object
 let pubSub = new PubSub();

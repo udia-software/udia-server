@@ -1,5 +1,6 @@
 "use strict";
 
+const { duration } = require("moment");
 const nodemailer = require("nodemailer");
 const { logger } = require("../logger");
 const {
@@ -7,7 +8,10 @@ const {
   SMTP_PASSWORD,
   SMTP_HOST,
   SMTP_PORT,
-  NODE_ENV
+  NODE_ENV,
+  CLIENT_PROTOCOL,
+  CLIENT_DOMAINNAME,
+  EMAIL_TOKEN_TIMEOUT
 } = require("../constants");
 
 let config = {
@@ -43,6 +47,9 @@ const transport = nodemailer.createTransport(config);
  * @param {string} validationToken - User's email validation token
  */
 async function sendEmailVerification(user, validationToken) {
+  const validityTime = duration(EMAIL_TOKEN_TIMEOUT, "milliseconds").humanize();
+  const urlNoToken = `${CLIENT_PROTOCOL}://${CLIENT_DOMAINNAME}/verify-email`;
+  const urlWithToken = `${urlNoToken}/${validationToken}`;
   const payload = {
     from: {
       name: "UDIA",
@@ -53,8 +60,23 @@ async function sendEmailVerification(user, validationToken) {
       address: user.email
     },
     subject: "[UDIA] Validate Your Email",
-    text: `This is your validation token. It is valid one hour after request generation.\n${validationToken}`,
-    html: `<p>This is your validation token. It is valid one hour after request generation.</p></p>${validationToken}</p>`
+    text: `This is your email validation token.
+    \nIt is valid for ${validityTime} after request generation.
+    \nYou may verify your email by going to the following link:
+    \n${urlWithToken}
+    \nor by manually copying and pasting your token:
+    \n${validationToken}
+    \nat
+    \n${urlNoToken}`,
+    html: `<p>This is your email validation token.
+    <br/>It is valid for ${validityTime} after request generation.</p>
+    <p>You may verify your email by clicking:
+    <br/><a href="${urlWithToken}">${urlWithToken}</a>
+    </p>
+    <p>You may also verify your email by manually copying and pasting your token:</p>
+    <pre>${validationToken}</pre>
+    <p>to:
+    <br/><a href="${urlNoToken}">${urlNoToken}</a></p>`
   };
   transport
     .sendMail(payload)
@@ -71,6 +93,9 @@ async function sendEmailVerification(user, validationToken) {
 }
 
 async function sendForgotPasswordEmail(user, validationToken) {
+  const validityTime = duration(EMAIL_TOKEN_TIMEOUT, "milliseconds").humanize();
+  const urlNoToken = `${CLIENT_PROTOCOL}://${CLIENT_DOMAINNAME}/password-reset`;
+  const urlWithToken = `${urlNoToken}/${validationToken}`;
   const payload = {
     from: {
       name: "UDIA",
@@ -81,8 +106,23 @@ async function sendForgotPasswordEmail(user, validationToken) {
       address: user.email
     },
     subject: "[UDIA] Reset Your Password",
-    text: `This is your password reset token. It is valid one hour after request generation.\n${validationToken}`,
-    html: `<p>This is your password reset token. It is valid one hour after request generation.</p></p>${validationToken}</p>`
+    text: `This is your password reset token.
+    \nIt is valid for ${validityTime} after request generation.
+    \nYou may verify your email by going to the following link:
+    \n${urlWithToken}
+    \nor by manually copying and pasting your token:
+    \n${validationToken}
+    \nat
+    \n${urlNoToken}`,
+    html: `<p>This is your password reset token.
+    <br/>It is valid for ${validityTime} after request generation.</p>
+    <p>You may verify your email by clicking:
+    <br/><a href="${urlWithToken}">${urlWithToken}</a>
+    </p>
+    <p>You may also verify your email by manually copying and pasting your token:</p>
+    <pre>${validationToken}</pre>
+    <p>to:
+    <br/><a href="${urlNoToken}">${urlNoToken}</a></p>`
   };
   transport
     .sendMail(payload)
