@@ -16,5 +16,5 @@ RUN npm install
 # Bundle app source
 COPY . ./
 
-EXPOSE ${PORT}
+EXPOSE 3000
 CMD [ "npm", "start" ]
