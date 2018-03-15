@@ -1,6 +1,6 @@
 {
   "name": "udia-server",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "",
   "main": "index.js",
   "scripts": {
@@ -40,7 +40,7 @@
     "dataloader": "^1.4.0",
     "express": "^4.16.3",
     "graphql": "^0.13.1",
-    "graphql-redis-subscriptions": "^1.4.0",
+    "graphql-redis-subscriptions": "git://github.com:udia-software/graphql-redis-subscriptions#6513776939b71972d5f211ecc87cf864123b767b",
     "graphql-subscriptions": "^0.5.8",
     "graphql-tools": "^2.23.0",
     "jsonwebtoken": "^8.2.0",

@@ -14,7 +14,8 @@ const {
   TEST_JWT,
   SALT_ROUNDS,
   MONGODB_DB_NAME,
-  CORS_ORIGIN
+  CORS_ORIGIN,
+  REDIS_URL
 } = require("./constants");
 const { logger, middlewareLogger } = require("./logger");
 const { metric } = require("./metric");
@@ -168,6 +169,11 @@ const start = async () => {
   });
 
   server.on("close", async () => {
+    // coverage don't care about redis integration
+    /* istanbul ignore next */
+    if (REDIS_URL) {
+      pubSub.close();
+    }
     // subscriptionServer can be null if server immediately closes
     subscriptionServer && (await subscriptionServer.close());
     clearInterval(metricSubscriptionInterval);
