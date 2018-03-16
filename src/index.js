@@ -165,7 +165,7 @@ const start = async () => {
       pubSub.publish("HealthMetric", {
         HealthMetricSubscription: { ...healthMetric }
       });
-    }, 1000);
+    }, 100);
   });
 
   server.on("close", async () => {
