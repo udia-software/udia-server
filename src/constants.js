@@ -1,8 +1,11 @@
 "use strict";
+const { version } = require("../package.json");
 
 // coverage don't care about environment variables
 /* istanbul ignore next */
 module.exports = {
+  // application variables
+  APP_VERSION: version,
   // environment variables
   NODE_ENV: process.env.NODE_ENV || "development",
   JWT_SECRET: process.env.JWT_SECRET || "UDIA Development JWT Secret Key",

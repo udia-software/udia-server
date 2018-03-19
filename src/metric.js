@@ -11,7 +11,7 @@ const {
   uptime: os_uptime
 } = require("os");
 const { uptime: p_uptime, version: node_version } = require("process");
-const { version } = require("../package.json");
+const { APP_VERSION } = require("./constants");
 
 /**
  * CPU metrics are unreliable inside a containerized environment (Docker)
@@ -37,7 +37,7 @@ function metric() {
   });
 
   return {
-    version, // version of application defined in package.json
+    version: APP_VERSION, // version of application defined in package.json
     node_version, // version of Node.js running the web application
     arch: arch(), // CPU architecture that compiled Node.js binary
     hostname: hostname(), // operating system hostname

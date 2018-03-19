@@ -115,7 +115,7 @@ const start = async () => {
   };
   app.set("trust proxy", ["loopback", "linklocal", "uniquelocal"]);
   app.use(middlewareLogger);
-  app.use(cors({ origin: CORS_ORIGIN }));
+  app.use(cors({ origin: CORS_ORIGIN.split("|") }));
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
 
   // coverage don't care about vetting developer graphiql route
@@ -161,6 +161,8 @@ const start = async () => {
   server.listen(PORT, () => {
     logger.info(`UDIA GraphQL ${NODE_ENV} server running on port ${PORT}.`);
     metricSubscriptionInterval = setInterval(() => {
+      // Should every new instance in a load balenced cluster be sending this?
+      // Might want to look into a distributed lock with Redis (redlock?)
       const healthMetric = metric();
       pubSub.publish("HealthMetric", {
         HealthMetricSubscription: { ...healthMetric }
