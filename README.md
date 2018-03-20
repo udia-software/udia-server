@@ -54,6 +54,7 @@ Set these, or use the defaults.
 | `CORS_ORIGIN`             | `*`                               | CORS origin vals, ` ` separated   |
 | `CLIENT_DOMAINNAME`       | `localhost:3001`                  | Domain:port of client (`udia.ca`) |
 | `CLIENT_PROTOCOL`         | `http`                            | Protocol of client (`https`)      |
+| `HEALTH_METRIC_INTERVAL`  | `500`                             | How long (ms) interval metrics    |
 
 ## License
 

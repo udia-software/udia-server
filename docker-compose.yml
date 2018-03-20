@@ -7,6 +7,7 @@ services:
     command: mongod --port 27018
   web:
     build: .
+    command: bash -c "sleep 5 && npm test"
     depends_on:
       - redis
       - mongo

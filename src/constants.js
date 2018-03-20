@@ -23,6 +23,7 @@ module.exports = {
   CORS_ORIGIN: process.env.CORS_ORIGIN || "*",
   CLIENT_DOMAINNAME: process.env.CLIENT_DOMAINNAME || "localhost:3001",
   CLIENT_PROTOCOL: process.env.CLIENT_PROTOCOL || "http",
+  HEALTH_METRIC_INTERVAL: process.env.HEALTH_METRIC_INTERVAL || "500",
   // static strings
   TOKEN_TYPES: {
     TOKEN_TYPE_VERIFY_EMAIL: "VERIFY_EMAIL",

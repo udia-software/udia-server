@@ -15,7 +15,8 @@ const {
   SALT_ROUNDS,
   MONGODB_DB_NAME,
   CORS_ORIGIN,
-  REDIS_URL
+  REDIS_URL,
+  HEALTH_METRIC_INTERVAL
 } = require("./constants");
 const { logger, middlewareLogger } = require("./logger");
 const { metric } = require("./metric");
@@ -168,7 +169,7 @@ const start = async () => {
       pubSub.publish("HealthMetric", {
         HealthMetricSubscription: { ...healthMetric }
       });
-    }, 100);
+    }, +HEALTH_METRIC_INTERVAL);
   });
 
   server.on("close", async () => {
