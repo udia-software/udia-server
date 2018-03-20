@@ -116,6 +116,7 @@ const start = async () => {
   app.set("trust proxy", ["loopback", "linklocal", "uniquelocal"]);
   app.use(middlewareLogger);
   app.use(cors({ origin: CORS_ORIGIN.split(" ") }));
+  logger.info(`CORS Enabled for: ${CORS_ORIGIN}`);
   app.use("/graphql", bodyParser.json(), graphqlExpress(buildOptions));
 
   // coverage don't care about vetting developer graphiql route

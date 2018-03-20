@@ -24,5 +24,8 @@ services:
       SMTP_PORT: 587
       EMAIL_TOKEN_TIMEOUT: 3600000
       REDIS_URL: redis://redis:6379
+      CORS_ORIGIN: http://localhost:3001
+      CLIENT_DOMAINNAME: localhost:3001
+      CLIENT_PROTOCOL: http
     ports:
       - "3000:3000"
