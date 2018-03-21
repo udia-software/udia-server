@@ -81,11 +81,14 @@ function generateValidationToken(user, type) {
     _id: "" + user._id,
     exp: Date.now() + +EMAIL_TOKEN_TIMEOUT
   };
-  const cypherText = crypto.AES.encrypt(
+  const bytes = crypto.AES.encrypt(
     JSON.stringify(rawValidationToken),
     JWT_SECRET
   );
-  return cypherText.toString();
+  const b64 = bytes.toString();
+  const e64 = crypto.enc.Base64.parse(b64);
+  const eHex = e64.toString(crypto.enc.Hex);
+  return eHex;
 }
 
 /**
@@ -95,8 +98,11 @@ function generateValidationToken(user, type) {
  */
 function decryptAndParseValidationToken(token, type) {
   try {
-    const bytes = crypto.AES.decrypt(token, JWT_SECRET);
-    const tokenObj = JSON.parse(bytes.toString(crypto.enc.Utf8));
+    const reb64 = crypto.enc.Hex.parse(token);
+    const bytes = reb64.toString(crypto.enc.Base64);
+    const decrypt = crypto.AES.decrypt(bytes, JWT_SECRET);
+    const plainText = decrypt.toString(crypto.enc.Utf8);
+    const tokenObj = JSON.parse(plainText);
     if (tokenObj.type === type) {
       return tokenObj;
     }
