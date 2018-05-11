@@ -5,7 +5,7 @@
 [![David](https://img.shields.io/david/udia-software/udia-server.svg?style=flat-square)](https://david-dm.org/udia-software/udia-server)
 [![David](https://img.shields.io/david/dev/udia-software/udia-server.svg?style=flat-square)](https://david-dm.org/udia-software/udia-server?type=dev)
 
-* Note: This is not ready for production.
+## This project has been rewritten. Please refer to [github.com/udia-software/udia](https://github.com/udia-software/udia)
 
 ## Quickstart
 
